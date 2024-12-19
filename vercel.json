@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/**": {
+      "excludeFiles": "{.next,.git,node_modules}/**"
+    }
+  },
+  "regions": [
+    "bom1"
+  ]
+}
