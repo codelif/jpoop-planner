@@ -14,7 +14,7 @@ export function Navbar() {
       </div>
       <div className="flex items-center gap-4">
         <Button variant="ghost" asChild>
-          <a href="https://github.com" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/codelif/jpoop-planner" target="_blank" rel="noopener noreferrer">
             <Github className="h-5 w-5" />
           </a>
         </Button>
