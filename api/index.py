@@ -20,9 +20,10 @@ def metadata():
 def classes():
     course = request.args.get("course") or ''
     semester = request.args.get("semester") or ''
+    phase = request.args.get("phase") or ''
     batch = request.args.get("batch") or ''
     
-    key = '_'.join((course, semester, batch))
+    key = '_'.join((course, semester, phase, batch))
     
 
     if CLASSES.get(key):
@@ -34,9 +35,10 @@ def classes():
 def classes_version():
     course = request.args.get("course") or ''
     semester = request.args.get("semester") or ''
+    phase = request.args.get("phase") or ''
     batch = request.args.get("batch") or ''
     
-    key = '_'.join((course, semester, batch))
+    key = '_'.join((course, semester, phase, batch))
     
 
     if CLASSES.get(key):

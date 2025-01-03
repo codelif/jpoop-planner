@@ -11,6 +11,16 @@ const nextConfig = {
       },
     ]
   },
+  redirects: async () => {
+    return [
+      {
+        source: '/batch',
+        destination: '/',
+        permanent: true,
+      },
+
+    ]
+  }
 }
 
 export default nextConfig;
