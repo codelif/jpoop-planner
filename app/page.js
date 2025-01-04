@@ -543,7 +543,8 @@ export default function Page() {
 
             <div className="flex-1 space-y-10 text-foreground transition-all">
               {timelineItems.map((item, index) => {
-                const timeActive = isCardTimeActive(item)
+
+                const timeActive = isCardTimeActive(item) && daysOfWeek[new Date().getDay()] == day
                 return (
                   <div key={index} ref={cardRefs.current[index]}>
                     <CardItem item={item} timeActive={timeActive} />
