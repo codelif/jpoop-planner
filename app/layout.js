@@ -22,6 +22,22 @@ const mono = Roboto_Mono({
 export const metadata = {
   title: "JIIT Planner",
   description: "Quickly view your upcoming events, lectures, tutorial, etc at JIIT ",
+  // Add mobile-specific metadata
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: 'no'
+  },
+  themeColor: '#000000', // For dark theme compatibility
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: "JIIT Planner"
+  },
+  formatDetection: {
+    telephone: false
+  }
 };
 
 export default function RootLayout({ children }) {
@@ -29,9 +45,11 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="apple-mobile-web-app-title" content="JIIT Planner" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body
-        className={`${sans.className} antialiased`}
+        className={`${sans.className} antialiased overscroll-y-none`}
       >
         <Analytics />
         <ThemeProvider

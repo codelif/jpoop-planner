@@ -7,7 +7,7 @@ export function CardItem({ item, timeActive }) {
   }
 
   return (
-    <div 
+    <div
       className={`relative p-4 rounded-md bg-gradient-to-br from-background to-accent/10 ${borderClasses} shadow-sm hover:scale-[1.01] transition-transform duration-300 ease-in-out`}
     >
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
@@ -19,7 +19,7 @@ export function CardItem({ item, timeActive }) {
       <h2 className="text-2xl font-bold mb-3">{item.subject}</h2>
 
       <div className="h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent mb-4"></div>
-      
+
       <div className="flex flex-wrap gap-3">
         <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-muted bg-muted/20 text-sm">
           <User className="h-4 w-4" /> {item.teacher}
