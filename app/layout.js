@@ -29,7 +29,6 @@ export const metadata = {
     maximumScale: 1,
     userScalable: 'no'
   },
-  themeColor: '#000000', // For dark theme compatibility
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
