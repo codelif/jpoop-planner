@@ -3,6 +3,7 @@ import { Montserrat } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Analytics } from "@vercel/analytics/react"
 import "./globals.css";
+import { themeColors } from './lib/theme-colors'
 
 // const sans = Roboto({
 //   variable: "--font-geist-sans",
@@ -25,8 +26,8 @@ export const viewport = {
   maximumScale: 1,
   userScalable: 'no',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#09090b' }
+    { media: '(prefers-color-scheme: light)', color: themeColors.light },
+    { media: '(prefers-color-scheme: dark)', color: themeColors.dark }
   ],
   colorScheme: 'light dark'
 }
