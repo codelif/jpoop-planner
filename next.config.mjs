@@ -5,7 +5,7 @@ const nextConfig = {
       {
         source: '/api/:path*',
         destination:
-          process.env.NODE_ENV === 'development'
+          process.env.NODE_ENV != 'sdevelopment'
             ? 'http://127.0.0.1:5328/api/:path*'
             : '/api/',
       },
@@ -19,6 +19,23 @@ const nextConfig = {
         permanent: true,
       },
 
+    ]
+  },
+  headers: async () => {
+    return [
+      {
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Service-Worker-Allowed',
+            value: '/',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+        ],
+      },
     ]
   }
 }
