@@ -338,22 +338,29 @@ export default function Page() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      <main className="flex-1 w-full max-w-4xl mx-auto px-6 py-10 relative space-y-6">
-        <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold">Filters</h2>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost">{filtersOpen ? "Hide" : "Show"}</Button>
-            </CollapsibleTrigger>
+      <main className="flex-1 w-full max-w-4xl mx-auto px-6 py-4 relative space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>{day}</span>
+            {batch && <><span>•</span><span>{batch.toUpperCase()}</span></>}
           </div>
+          <Button
+            variant="outline"
+            onClick={() => setFiltersOpen(!filtersOpen)}
+            className="button"
+          >
+            {filtersOpen ? "Hide Filters" : "Filters"}
+          </Button>
+        </div>
 
+        <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
           <CollapsibleContent className="mt-4 space-y-4">
-            <div className="flex flex-wrap gap-4 items-center">
+            <div className="grid grid-cols-2 gap-4">
               {/* Day Select */}
               <div className="flex items-center gap-2">
-                <span>Day:</span>
+                <span className="w-24 text-right">Day:</span>
                 <Select value={day} onValueChange={setDay}>
-                  <SelectTrigger className="w-[150px]">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select day" />
                   </SelectTrigger>
                   <SelectContent>
@@ -368,13 +375,13 @@ export default function Page() {
 
               {/* Course */}
               <div className="flex items-center gap-2">
-                <span>Course:</span>
+                <span className="w-24 text-right">Course:</span>
                 <Select
                   value={course}
                   onValueChange={handleCourseChange}
                   disabled={courses.length === 0}
                 >
-                  <SelectTrigger className="w-[150px]">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select course" />
                   </SelectTrigger>
                   <SelectContent>
@@ -389,13 +396,13 @@ export default function Page() {
 
               {/* Semester */}
               <div className="flex items-center gap-2">
-                <span>Semester:</span>
+                <span className="w-24 text-right">Semester:</span>
                 <Select
                   value={semester}
                   onValueChange={handleSemesterChange}
                   disabled={semestersForCourse.length === 0}
                 >
-                  <SelectTrigger className="w-[150px]">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select semester" />
                   </SelectTrigger>
                   <SelectContent>
@@ -410,13 +417,13 @@ export default function Page() {
 
               {/* Phase */}
               <div className="flex items-center gap-2">
-                <span>Phase:</span>
+                <span className="w-24 text-right">Phase:</span>
                 <Select
                   value={phase}
                   onValueChange={handlePhaseChange}
                   disabled={phasesForCourseSem.length === 0}
                 >
-                  <SelectTrigger className="w-[150px]">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select phase" />
                   </SelectTrigger>
                   <SelectContent>
@@ -431,13 +438,13 @@ export default function Page() {
 
               {/* Batch */}
               <div className="flex items-center gap-2">
-                <span>Batch:</span>
+                <span className="w-24 text-right">Batch:</span>
                 <Select
                   value={batch}
                   onValueChange={handleBatchChange}
                   disabled={batchesForCourseSemPhase.length === 0}
                 >
-                  <SelectTrigger className="w-[150px]">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select batch" />
                   </SelectTrigger>
                   <SelectContent>
@@ -547,7 +554,7 @@ export default function Page() {
                 const timeActive = isCardTimeActive(item) && daysOfWeek[new Date().getDay()] == day
                 return (
                   <div key={index} ref={cardRefs.current[index]}>
-                    <CardItem item={item} timeActive={timeActive} />
+                    <CardItem item={item} timeActive={timeActive} className="card" />
                   </div>
                 )
               })}
@@ -555,7 +562,6 @@ export default function Page() {
           </div>
         )}
       </main>
-
       <Footer />
     </div>
   )
