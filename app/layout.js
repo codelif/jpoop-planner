@@ -19,16 +19,21 @@ const mono = Roboto_Mono({
   subsets: ["latin"],
 });
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: 'no',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#09090b' }
+  ],
+  colorScheme: 'light dark'
+}
+
 export const metadata = {
   title: "JIIT Planner",
   description: "Quickly view your upcoming events, lectures, tutorial, etc at JIIT ",
-  // Add mobile-specific metadata
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: 'no'
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -43,9 +48,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <meta name="apple-mobile-web-app-title" content="JIIT Planner" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#09090b" />
       </head>
       <body
         className={`${sans.className} antialiased overscroll-y-none`}
