@@ -57,7 +57,7 @@ export default function RootLayout({ children }) {
         <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0a9642b5f0d144f5bc128335e601712f"}'></script>
       </head>
       <body
-        className={`${sans.className} antialiased overscroll-y-none`}
+        className={`${sans.className} antialiased overscroll-none overflow-x-hidden`}
       >
         <ThemeProvider
           attribute="class"

@@ -23,7 +23,7 @@ function timeToMinutes(timeStr) {
  */
 export function Timeline({ timelineItems, uniqueTimes, cardRefs }) {
   const lineRef = React.useRef(null)
-  
+
   const [positions, setPositions] = React.useState({})
   const [dotPosition, setDotPosition] = React.useState(0)
   const [lineHeight, setLineHeight] = React.useState(500)
@@ -130,13 +130,13 @@ export function Timeline({ timelineItems, uniqueTimes, cardRefs }) {
   }
 
   return (
-    <div className="relative" style={{ minWidth: '50px' }}>
-      <div 
+    <div className="relative" style={{ minWidth: '40px' }}>
+      <div
         ref={lineRef}
         className="relative w-[2px] bg-gray-300 dark:bg-gray-600 mx-auto transition-all"
         style={{ height: lineHeight }}
       >
-        <div 
+        <div
           className="absolute w-4 h-4 rounded-full bg-primary shadow"
           style={{ left: '50%', transform: 'translateX(-50%)', top: dotPosition }}
         ></div>
@@ -149,7 +149,7 @@ export function Timeline({ timelineItems, uniqueTimes, cardRefs }) {
           return (
             <div key={t} className="absolute transition-all" style={{ top: pos, left: '50%', transform: 'translateX(-50%)' }}>
               <div className="w-2 h-2 rounded-full bg-foreground"></div>
-              <span 
+              <span
                 className={
                   `absolute text-xs whitespace-nowrap ` +
                   (active ? "text-foreground font-bold" : "text-muted-foreground")
