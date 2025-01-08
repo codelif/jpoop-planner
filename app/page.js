@@ -601,7 +601,7 @@ export default function Page() {
           </div>
         )}
         {!loading && timelineItems.length > 0 && (
-          <div className="text-xs text-center text-muted-foreground mt-2">
+          <div className="text-xs text-center text-muted-foreground mt-2 absolute bottom-4 left-0 right-0">
             Swipe left/right to change days
           </div>
         )}
