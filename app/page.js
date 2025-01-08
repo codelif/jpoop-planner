@@ -8,6 +8,8 @@ import { Footer } from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible"
+import { useSwipeable } from "react-swipeable";
+import { SwipeHint } from "@/components/SwipeHint"
 
 function timeToMinutes(timeStr) {
   const [time, meridiem] = timeStr.split(" ")
@@ -46,6 +48,7 @@ export default function Page() {
   const [filtersOpen, setFiltersOpen] = React.useState(false) // For Collapsible
   const [loading, setLoading] = React.useState(true)
   const [offline, setOffline] = React.useState(!navigator.onLine)
+  const [showSwipeHint, setShowSwipeHint] = React.useState(false)
 
   // Keeps current time updated every minute
   React.useEffect(() => {
@@ -334,8 +337,44 @@ export default function Page() {
     localStorage.setItem("selectedBatch", val)
   }
 
+  // Add pull-to-refresh
+  React.useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  }, []);
+
+  // Add swipe handlers to change days
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      const currentIndex = daysOfWeek.indexOf(day);
+      const nextIndex = (currentIndex + 1) % daysOfWeek.length;
+      setDay(daysOfWeek[nextIndex]);
+    },
+    onSwipedRight: () => {
+      const currentIndex = daysOfWeek.indexOf(day);
+      const prevIndex = (currentIndex - 1 + daysOfWeek.length) % daysOfWeek.length;
+      setDay(daysOfWeek[prevIndex]);
+    },
+    preventDefaultTouchmoveEvent: true,
+    trackMouse: false
+  });
+
+  React.useEffect(() => {
+    // Show hint only if it hasn't been shown before
+    const hasSeenHint = localStorage.getItem('hasSeenSwipeHint')
+    if (!hasSeenHint && !loading && timelineItems.length > 0) {
+      setShowSwipeHint(true)
+    }
+  }, [loading, timelineItems])
+
+  function dismissHint() {
+    setShowSwipeHint(false)
+    localStorage.setItem('hasSeenSwipeHint', 'true')
+  }
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col" {...swipeHandlers}>
       <Navbar />
 
       <main className="flex-1 w-full max-w-4xl mx-auto px-6 py-4 relative space-y-6">
@@ -561,7 +600,13 @@ export default function Page() {
             </div>
           </div>
         )}
+        {!loading && timelineItems.length > 0 && (
+          <div className="text-xs text-center text-muted-foreground mt-2">
+            Swipe left/right to change days
+          </div>
+        )}
       </main>
+      {showSwipeHint && <SwipeHint onDismiss={dismissHint} />}
       <Footer />
     </div>
   )

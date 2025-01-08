@@ -1,3 +1,5 @@
+import { themeColors } from './lib/theme-colors'
+
 export default function manifest() {
   return {
     name: 'JIIT Planner',
@@ -6,7 +8,8 @@ export default function manifest() {
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
-    theme_color: "#ffffff",
+    theme_color: themeColors.light,
+    theme_color_dark: themeColors.dark,
     icons: [
       {
         "src": "/web-app-manifest-192x192.png",

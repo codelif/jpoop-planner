@@ -85,6 +85,64 @@ html {
   display: none;
 }
 
+/* Mobile-first styles - no hover effects on touch devices */
+@media (hover: none) {
+  .button:hover,
+  .card:hover {
+    transform: none !important;
+    background: inherit !important;
+  }
+
+  /* Active state feedback for touch */
+  .button:active,
+  .card:active {
+    background: hsl(var(--muted)) !important;
+    transform: scale(0.98);
+  }
+}
+
+/* Larger tap targets on mobile */
+@media (max-width: 768px) {
+  .button,
+  .select-trigger {
+    min-height: 44px; /* iOS minimum tap target size */
+    padding: 12px 16px;
+  }
+
+  /* Prevent text selection on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+}
+
+/* Only enable hover effects on devices that support hover */
+@media (hover: hover) {
+  .button:hover,
+  .card:hover {
+    transform: scale(1.01);
+    background: hsl(var(--muted));
+  }
+}
+
+@keyframes pulse-x {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+.animate-pulse-x {
+  animation: pulse-x 1.5s ease-in-out infinite;
+}
+
+.animate-pulse-x:first-child {
+  animation-direction: reverse;
+}
+
 @layer components {
   .container {
     @apply px-6 py-4 mx-auto;
