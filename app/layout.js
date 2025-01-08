@@ -57,7 +57,7 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#09090b" />
       </head>
       <body
-        className={`${sans.className} antialiased overscroll-y-none`}
+        className={`${sans.className} antialiased overscroll-none overflow-x-hidden`}
       >
         <Analytics />
         <ThemeProvider
