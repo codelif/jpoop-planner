@@ -1,7 +1,6 @@
 import { Roboto, Roboto_Mono } from "next/font/google";
 import { Montserrat } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Analytics } from "@vercel/analytics/react"
 import "./globals.css";
 import { themeColors } from './lib/theme-colors'
 
@@ -55,11 +54,11 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#09090b" />
+        <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0a9642b5f0d144f5bc128335e601712f"}'></script>
       </head>
       <body
         className={`${sans.className} antialiased overscroll-none overflow-x-hidden`}
       >
-        <Analytics />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
