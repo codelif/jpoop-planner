@@ -7,9 +7,32 @@ import { Navbar } from "@/components/Navbar"
 import { Footer } from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible"
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import { useSwipeable } from "react-swipeable";
 import { SwipeHint } from "@/components/SwipeHint"
+import { motion, AnimatePresence } from "framer-motion"
+
+const slideVariants = {
+  enter: (direction) => ({
+    position: 'absolute',
+    width: '100%',
+    x: direction > 0 ? '100%' : '-100%',
+    opacity: 0
+  }),
+  center: {
+    position: 'relative',
+    width: '100%',
+    x: 0,
+    opacity: 1,
+    zIndex: 1
+  },
+  exit: (direction) => ({
+    position: 'absolute',
+    width: '100%',
+    x: direction < 0 ? '100%' : '-100%',
+    opacity: 0
+  })
+}
 
 function timeToMinutes(timeStr) {
   const [time, meridiem] = timeStr.split(" ")
@@ -345,15 +368,19 @@ export default function Page() {
   }, []);
 
   // Add swipe handlers to change days
+  const [slideDirection, setSlideDirection] = React.useState(0)
+
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () => {
       const currentIndex = daysOfWeek.indexOf(day);
       const nextIndex = (currentIndex + 1) % daysOfWeek.length;
+      setSlideDirection(1);
       setDay(daysOfWeek[nextIndex]);
     },
     onSwipedRight: () => {
       const currentIndex = daysOfWeek.indexOf(day);
       const prevIndex = (currentIndex - 1 + daysOfWeek.length) % daysOfWeek.length;
+      setSlideDirection(-1);
       setDay(daysOfWeek[prevIndex]);
     },
     preventDefaultTouchmoveEvent: true,
@@ -377,24 +404,36 @@ export default function Page() {
     <div className="min-h-screen flex flex-col" {...swipeHandlers}>
       <Navbar />
 
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-4 relative space-y-6 overflow-x-hidden">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>{day}</span>
-            {batch && <><span>•</span><span>{batch.toUpperCase()}</span></>}
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-4 relative">
+        {/* Header and Filters - Normal flow */}
+        <div className="bg-background/80 backdrop-blur-sm mb-4">
+          <div className="flex items-center pl-[10px] justify-between mb-4">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span>{day}</span>
+              {batch && <><span>•</span><span>{batch.toUpperCase()}</span></>}
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setFiltersOpen(!filtersOpen)}
+              className="relative"
+            >
+              {filtersOpen ? "Hide Filters" : "Filters"}
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => setFiltersOpen(!filtersOpen)}
-            className="button"
-          >
-            {filtersOpen ? "Hide Filters" : "Filters"}
-          </Button>
-        </div>
 
-        <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <CollapsibleContent className="mt-4 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <motion.div
+            initial={false}
+            animate={{
+              height: filtersOpen ? "auto" : 0,
+              opacity: filtersOpen ? 1 : 0
+            }}
+            transition={{
+              duration: 0.2,
+              ease: "easeInOut"
+            }}
+            className="overflow-hidden"
+          >
+            <div className="grid grid-cols-2 gap-4 pb-4">
               {/* Day Select */}
               <div className="flex items-center gap-2">
                 <span className="w-24 text-right">Day:</span>
@@ -412,49 +451,57 @@ export default function Page() {
                 </Select>
               </div>
 
-              {/* Course */}
+              {/* Rest of your filter selects */}
+              {/* Course Select */}
               <div className="flex items-center gap-2">
-                <span className="w-24 text-right">Course:</span>
-                <Select
-                  value={course}
-                  onValueChange={handleCourseChange}
-                  disabled={courses.length === 0}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select course" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {courses.map(c => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {/* Course */}
+                <div className="flex items-center gap-2">
+                  <span className="w-24 text-right">Course:</span>
+                  <Select
+                    value={course}
+                    onValueChange={handleCourseChange}
+                    disabled={courses.length === 0}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select course" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
               </div>
 
-              {/* Semester */}
+              {/* Semester Select */}
               <div className="flex items-center gap-2">
-                <span className="w-24 text-right">Semester:</span>
-                <Select
-                  value={semester}
-                  onValueChange={handleSemesterChange}
-                  disabled={semestersForCourse.length === 0}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select semester" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {semestersForCourse.map(s => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {/* Semester */}
+                <div className="flex items-center gap-2">
+                  <span className="w-24 text-right">Semester:</span>
+                  <Select
+                    value={semester}
+                    onValueChange={handleSemesterChange}
+                    disabled={semestersForCourse.length === 0}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select semester" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {semestersForCourse.map(s => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              {/* Phase */}
+              {/* Phase Select */}
               <div className="flex items-center gap-2">
                 <span className="w-24 text-right">Phase:</span>
                 <Select
@@ -475,7 +522,7 @@ export default function Page() {
                 </Select>
               </div>
 
-              {/* Batch */}
+              {/* Batch Select */}
               <div className="flex items-center gap-2">
                 <span className="w-24 text-right">Batch:</span>
                 <Select
@@ -496,110 +543,128 @@ export default function Page() {
                 </Select>
               </div>
             </div>
-          </CollapsibleContent>
-        </Collapsible>
+          </motion.div>
+        </div>
 
-        {loading ? (
-          <div className="relative flex gap-16">
-            {/* Timeline skeleton */}
-            <div className="relative" style={{ minWidth: '50px' }}>
-              <div
-                className="relative w-[2px] bg-gray-300 dark:bg-gray-600 mx-auto transition-all"
-                style={{ height: '500px' }}
-              >
-                <div
-                  className="absolute w-4 h-4 rounded-full bg-gray-300 dark:bg-gray-700"
-                  style={{
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    top: '50%',
-                  }}
-                />
-                <div
-                  className="absolute w-2 h-2 bg-gray-300 dark:bg-gray-700 rounded-full"
-                  style={{
-                    top: '20%',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                  }}
-                />
-                <div
-                  className="absolute w-2 h-2 bg-gray-300 dark:bg-gray-700 rounded-full"
-                  style={{
-                    top: '40%',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                  }}
-                />
-                <div
-                  className="absolute w-2 h-2 bg-gray-300 dark:bg-gray-700 rounded-full"
-                  style={{
-                    top: '60%',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                  }}
-                />
-                <div
-                  className="absolute w-2 h-2 bg-gray-300 dark:bg-gray-700 rounded-full"
-                  style={{
-                    top: '80%',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                  }}
-                />
-              </div>
-            </div>
+        {/* Main content */}
+        <div className="relative" style={{ minHeight: '500px' }}>
+          <AnimatePresence initial={false} custom={slideDirection} mode="sync">
+            <motion.div
+              key={day}
+              custom={slideDirection}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: "tween", duration: 0.3, ease: "easeInOut" },
+                opacity: { duration: 0.2 }
+              }}
+            >
+              {loading ? (
+                <div className="relative flex gap-16">
+                  {/* Timeline skeleton */}
+                  <div className="relative" style={{ minWidth: '50px' }}>
+                    <div
+                      className="relative w-[2px] bg-gray-300 dark:bg-gray-600 mx-auto transition-all"
+                      style={{ height: '500px' }}
+                    >
+                      <div
+                        className="absolute w-4 h-4 rounded-full bg-gray-300 dark:bg-gray-700"
+                        style={{
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          top: '50%',
+                        }}
+                      />
+                      <div
+                        className="absolute w-2 h-2 bg-gray-300 dark:bg-gray-700 rounded-full"
+                        style={{
+                          top: '20%',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                        }}
+                      />
+                      <div
+                        className="absolute w-2 h-2 bg-gray-300 dark:bg-gray-700 rounded-full"
+                        style={{
+                          top: '40%',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                        }}
+                      />
+                      <div
+                        className="absolute w-2 h-2 bg-gray-300 dark:bg-gray-700 rounded-full"
+                        style={{
+                          top: '60%',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                        }}
+                      />
+                      <div
+                        className="absolute w-2 h-2 bg-gray-300 dark:bg-gray-700 rounded-full"
+                        style={{
+                          top: '80%',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                        }}
+                      />
+                    </div>
+                  </div>
 
-            {/* Card skeletons */}
-            <div className="flex-1 space-y-10 text-foreground transition-all">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="p-4 rounded-md bg-gradient-to-br from-background to-accent/10 border border-muted shadow-sm animate-pulse"
-                >
-                  <div className="h-4 bg-gray-300 dark:bg-gray-700 w-1/4 mb-2 rounded" />
-                  <div className="h-6 bg-gray-300 dark:bg-gray-700 w-1/3 mb-3 rounded" />
-                  <div className="h-[2px] bg-gray-300 dark:bg-gray-700 w-full mb-4" />
-                  <div className="flex flex-wrap gap-3">
-                    <div className="w-20 h-5 bg-gray-300 dark:bg-gray-700 rounded" />
-                    <div className="w-20 h-5 bg-gray-300 dark:bg-gray-700 rounded" />
-                    <div className="w-20 h-5 bg-gray-300 dark:bg-gray-700 rounded" />
+                  {/* Card skeletons */}
+                  <div className="flex-1 space-y-10 text-foreground transition-all">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="p-4 rounded-md bg-gradient-to-br from-background to-accent/10 border border-muted shadow-sm animate-pulse"
+                      >
+                        <div className="h-4 bg-gray-300 dark:bg-gray-700 w-1/4 mb-2 rounded" />
+                        <div className="h-6 bg-gray-300 dark:bg-gray-700 w-1/3 mb-3 rounded" />
+                        <div className="h-[2px] bg-gray-300 dark:bg-gray-700 w-full mb-4" />
+                        <div className="flex flex-wrap gap-3">
+                          <div className="w-20 h-5 bg-gray-300 dark:bg-gray-700 rounded" />
+                          <div className="w-20 h-5 bg-gray-300 dark:bg-gray-700 rounded" />
+                          <div className="w-20 h-5 bg-gray-300 dark:bg-gray-700 rounded" />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        ) : timelineItems.length === 0 ? (
-          offline ? (
-            <div className="text-center text-muted-foreground">
-              You are offline and no cached data available for these filters.
-            </div>
-          ) : (
-            <div className="text-center text-muted-foreground">
-              No classes found for the selected filters.
-            </div>
-          )
-        ) : (
-          <div className="relative flex gap-16">
-            <Timeline
-              timelineItems={timelineItems}
-              uniqueTimes={uniqueTimes}
-              cardRefs={cardRefs.current}
-            />
-
-            <div className="flex-1 space-y-10 text-foreground transition-all">
-              {timelineItems.map((item, index) => {
-
-                const timeActive = isCardTimeActive(item) && daysOfWeek[new Date().getDay()] == day
-                return (
-                  <div key={index} ref={cardRefs.current[index]}>
-                    <CardItem item={item} timeActive={timeActive} className="card" />
+              ) : timelineItems.length === 0 ? (
+                offline ? (
+                  <div className="text-center text-muted-foreground">
+                    You are offline and no cached data available for these filters.
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground">
+                    No classes found for the selected filters.
                   </div>
                 )
-              })}
-            </div>
-          </div>
-        )}
+              ) : (
+                <div className="relative flex gap-16">
+                  <Timeline
+                    timelineItems={timelineItems}
+                    uniqueTimes={uniqueTimes}
+                    cardRefs={cardRefs.current}
+                  />
+
+                  <div className="flex-1 space-y-10 text-foreground transition-all">
+                    {timelineItems.map((item, index) => {
+
+                      const timeActive = isCardTimeActive(item) && daysOfWeek[new Date().getDay()] == day
+                      return (
+                        <div key={index} ref={cardRefs.current[index]}>
+                          <CardItem item={item} timeActive={timeActive} className="card" />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
         {!loading && timelineItems.length > 0 && (
           <div className="text-xs text-center text-muted-foreground mt-2">
             Swipe left/right to change days
