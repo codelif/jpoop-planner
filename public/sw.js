@@ -1,12 +1,44 @@
+const CACHE_NAME = 'jiit-planner-cache-v1';
+const urlsToCache = [
+    '/',
+    // Add other assets you want to cache
+];
+
 self.addEventListener('install', (event) => {
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then((cache) => {
+                return cache.addAll(urlsToCache);
+            })
+            .catch((error) => {
+                console.error('Failed to cache during install:', error);
+            })
+    );
     self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-        fetch(event.request)
-            .catch(() => {
-                return caches.match(event.request);
+        caches.match(event.request)
+            .then((response) => {
+                if (response) {
+                    return response;
+                }
+                return fetch(event.request).then(
+                    (response) => {
+                        if (!response || response.status !== 200 || response.type !== 'basic') {
+                            return response;
+                        }
+                        const responseToCache = response.clone();
+                        caches.open(CACHE_NAME)
+                            .then((cache) => {
+                                cache.put(event.request, responseToCache);
+                            });
+                        return response;
+                    }
+                ).catch((error) => {
+                    console.error('Failed to fetch and cache:', error);
+                });
             })
     );
 });
