@@ -1,10 +1,26 @@
-import { Calendar, User, Users, MapPin } from "lucide-react"
+import { Calendar, User, Users, MapPin, BookOpen, FileText, FlaskConical, Tag } from "lucide-react"
 
 export function CardItem({ item, timeActive }) {
   let borderClasses = "border border-muted"
   if (timeActive) {
     borderClasses = "border-4 border-foreground"
   }
+
+  // Determine the label and icon for the lecture type
+  const getTypeBadge = (type) => {
+    switch (type) {
+      case 'L':
+        return { label: 'Lecture', icon: <BookOpen className="h-4 w-4" /> }
+      case 'T':
+        return { label: 'Tutorial', icon: <FileText className="h-4 w-4" /> }
+      case 'P':
+        return { label: 'Lab', icon: <FlaskConical className="h-4 w-4" /> }
+      default:
+        return { label: type, icon: <Tag className="h-4 w-4" /> }
+    }
+  }
+
+  const { label, icon } = getTypeBadge(item.type)
 
   return (
     <div
@@ -21,6 +37,9 @@ export function CardItem({ item, timeActive }) {
       <div className="h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent mb-4"></div>
 
       <div className="flex flex-wrap gap-3">
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-muted bg-muted/20 text-sm">
+          {icon} {label}
+        </div>
         <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-muted bg-muted/20 text-sm">
           <User className="h-4 w-4" /> {item.teacher}
         </div>
