@@ -18,10 +18,11 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  console.log(event.request.url.includes('/api/'))
     event.respondWith(
         caches.match(event.request)
             .then((response) => {
-                if (response) {
+                if (response && !event.request.url.includes('/api/')) {
                     return response;
                 }
                 return fetch(event.request).then(
