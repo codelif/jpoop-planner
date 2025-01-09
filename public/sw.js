@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jiit-planner-cache-v1';
+const CACHE_NAME = 'jiit-planner-cache-v2025-01-09_07-47-50';
 const urlsToCache = [
     '/',
     // Add other assets you want to cache
@@ -15,6 +15,21 @@ self.addEventListener('install', (event) => {
             })
     );
     self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) =>
+      Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log("Deleting old cache:", cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      )
+    )
+  );
 });
 
 self.addEventListener('fetch', (event) => {
