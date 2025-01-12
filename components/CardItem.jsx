@@ -25,6 +25,7 @@ export function CardItem({ item, timeActive }) {
   return (
     <div
       className={`relative p-4 rounded-md bg-gradient-to-br from-background to-accent/10 ${borderClasses} shadow-sm hover:scale-[1.01] transition-transform duration-300 ease-in-out`}
+      style={{'word-break': 'break-word'}}
     >
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
         <Calendar className="h-4 w-4" />
