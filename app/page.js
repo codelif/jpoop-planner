@@ -24,7 +24,6 @@ const slideVariants = {
     width: '100%',
     x: 0,
     opacity: 1,
-    zIndex: 1
   },
   exit: (direction) => ({
     position: 'absolute',
