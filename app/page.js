@@ -11,6 +11,7 @@ import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import { useSwipeable } from "react-swipeable";
 import { SwipeHint } from "@/components/SwipeHint"
 import { motion, AnimatePresence } from "framer-motion"
+import { UpdateIndicator } from "@/components/UpdateIndicator" // NEW COMPONENT FOR NOTIFICATION
 
 const slideVariants = {
   enter: (direction) => ({
@@ -59,20 +60,23 @@ export default function Page() {
   const [day, setDay] = React.useState(daysOfWeek[new Date().getDay()])
   const [course, setCourse] = React.useState("")
   const [semester, setSemester] = React.useState("")
-  const [phase, setPhase] = React.useState("1")       // <-- phase added here
+  const [phase, setPhase] = React.useState("1")       
   const [batch, setBatch] = React.useState("")
 
   // Classes data
   const [timelineItems, setTimelineItems] = React.useState([])
   const [uniqueTimes, setUniqueTimes] = React.useState([])
 
-  // UI state
-  const [filtersOpen, setFiltersOpen] = React.useState(false) // For Collapsible
-  const [loading, setLoading] = React.useState(true)
+  // UI states
+  const [filtersOpen, setFiltersOpen] = React.useState(false)
+  const [showSkeleton, setShowSkeleton] = React.useState(false) // replaced old "loading" usage
   const [offline, setOffline] = React.useState(!navigator.onLine)
   const [showSwipeHint, setShowSwipeHint] = React.useState(false)
 
-  // Keeps current time updated every minute
+  // A simple status string for “checking”, “updating”, “updated”, “error”, etc.
+  const [updateStatus, setUpdateStatus] = React.useState("")
+
+  // Keep current time updated every minute
   React.useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTimeMin(getCurrentTimeMin())
@@ -92,165 +96,163 @@ export default function Page() {
     }
   }, [])
 
-  // Load metadata (cached in localStorage) or fetch
+  // 1) Load/fetch metadata on mount or if offline changes
   React.useEffect(() => {
     async function loadMetadata() {
-      let data
-      const cachedMetadata = localStorage.getItem("metadata")
-      if (cachedMetadata && offline) {
-        // If we have cached metadata and are offline, use it
-        data = JSON.parse(cachedMetadata)
-      } else if (!offline) {
-        // If online, fetch fresh metadata
-        const res = await fetch("/api/metadata")
-        data = await res.json()
-        localStorage.setItem("metadata", JSON.stringify(data))
+      let localData = null
+      const cached = localStorage.getItem("metadata")
+      if (cached) {
+        localData = JSON.parse(cached)
+        setMetadata(localData)
       } else {
-        // Offline and no cached metadata
-        data = null
+        setShowSkeleton(true)
       }
 
-      setMetadata(data)
-
-      // Retrieve saved filters
-      const savedCourse = localStorage.getItem("selectedCourse")
-      const savedSemester = localStorage.getItem("selectedSemester")
-      const savedPhase = localStorage.getItem("selectedPhase") // <-- retrieve saved phase
-      const savedBatch = localStorage.getItem("selectedBatch")
-
-      let defaultCourse = ""
-      let defaultSemester = ""
-      let defaultPhase = "1"   // <-- default phase is 1
-      let defaultBatch = ""
-
-      if (data) {
-        // COURSE
-        if (savedCourse && data.courses.some(c => c.id === savedCourse)) {
-          defaultCourse = savedCourse
-        } else if (data.courses.length > 0) {
-          defaultCourse = data.courses[0].id
-        }
-
-        // SEMESTER
-        if (defaultCourse) {
-          const semestersForCourse = data.semesters[defaultCourse] || []
-          if (savedSemester && semestersForCourse.some(s => s.id === savedSemester)) {
-            defaultSemester = savedSemester
-          } else if (semestersForCourse.length > 0) {
-            defaultSemester = semestersForCourse[0].id
-          }
-        }
-
-        // PHASE
-        // We assume metadata has a structure like metadata.phases[course][semester] = [ { id, name }, ... ]
-        if (defaultCourse && defaultSemester) {
-          const phasesForCourseSem = data?.phases?.[defaultCourse]?.[defaultSemester] || []
-          if (
-            savedPhase &&
-            phasesForCourseSem.some(p => p.id === savedPhase)
-          ) {
-            defaultPhase = savedPhase
-          } else if (phasesForCourseSem.length > 0) {
-            defaultPhase = phasesForCourseSem[0].id
-          }
-        }
-
-        // BATCH
-        if (defaultCourse && defaultSemester && defaultPhase) {
-          // We assume metadata.batches[course][semester][phase] = [ { id, name }, ... ]
-          const batchesForCourseSemPhase =
-            data?.batches?.[defaultCourse]?.[defaultSemester]?.[defaultPhase] || []
-          if (
-            savedBatch &&
-            batchesForCourseSemPhase.some(b => b.id === savedBatch)
-          ) {
-            defaultBatch = savedBatch
-          } else if (batchesForCourseSemPhase.length > 0) {
-            defaultBatch = batchesForCourseSemPhase[0].id
-          }
-        }
-      }
-
-      setCourse(defaultCourse)
-      setSemester(defaultSemester)
-      setPhase(defaultPhase)      // <-- set default phase
-      setBatch(defaultBatch)
-    }
-    loadMetadata().catch(console.error)
-  }, [offline])
-
-  // Load allclasses
-  React.useEffect(() => {
-    // We need all filters to be valid
-    if (!metadata || !course || !semester || !phase || !day) {
-      setLoading(false) // If we don't have enough info, just stop loading.
-      return
-    }
-
-    let canceled = false
-    setLoading(true)
-
-    async function loadAllClasses() {
-      // Construct a unique key including phase
-      const cacheKey = `allClasses_${course}_${semester}_${phase}_${batch}`
-
-      // Check version only if online
-      let currentServerVersion = null
-      if (!offline) {
-        const versionUrl = `/api/allclasses-version?course=${encodeURIComponent(course)}&semester=${encodeURIComponent(semester)}&phase=${encodeURIComponent(phase)}&batch=${encodeURIComponent(batch)}`
-        const versionRes = await fetch(versionUrl)
-        const versionData = await versionRes.json()
-        currentServerVersion = versionData.cacheVersion
-      }
-
-      // Check localStorage for cached version
-      const cachedAll = localStorage.getItem(cacheKey)
-      if (cachedAll) {
-        const cachedData = JSON.parse(cachedAll)
-        // If offline and have cached data, or if the version matches
-        if (
-          offline ||
-          (currentServerVersion && cachedData.cacheVersion === currentServerVersion)
-        ) {
-          if (!canceled) {
-            setDataForTimeline(cachedData.classes[day] || [])
-            setLoading(false)
-          }
-          return
-        } else {
-          // version mismatch or no version on the server side
-          localStorage.removeItem(cacheKey)
-        }
-      }
-
-      // No valid cache or we need fresh data
       if (offline) {
-        // Offline but no valid cache
-        setDataForTimeline([]) // no data
-        setLoading(false)
+        setShowSkeleton(false)
         return
       }
 
-      // Fetch from allclasses including phase
-      const urlAll = `/api/allclasses?course=${encodeURIComponent(course)}&semester=${encodeURIComponent(semester)}&phase=${encodeURIComponent(phase)}&batch=${encodeURIComponent(batch)}`
-      const allRes = await fetch(urlAll)
-      const allData = await allRes.json()
-      if (canceled) return
+      try {
+        setUpdateStatus("checking-metadata")
+        const res = await fetch("/api/metadata")
+        const freshData = await res.json()
 
-      // Store in localStorage
-      localStorage.setItem(cacheKey, JSON.stringify(allData))
-      setDataForTimeline(allData.classes[day] || [])
-      setLoading(false)
+        // If local is null or versions differ, update local
+        if (!localData || freshData.version !== localData.version) {
+          setUpdateStatus("updating-metadata")
+          setMetadata(freshData)
+          localStorage.setItem("metadata", JSON.stringify(freshData))
+        }
+
+        setUpdateStatus("") // done
+      } catch (err) {
+        console.error("Error fetching metadata", err)
+        setUpdateStatus("error-metadata")
+      } finally {
+        setShowSkeleton(false)
+      }
     }
 
-    loadAllClasses().catch(e => {
-      console.error(e)
-      setLoading(false)
-    })
+    loadMetadata()
+  }, [offline])
 
-    return () => {
-      canceled = true
+  React.useEffect(() => {
+    if (!metadata) return
+
+    const savedCourse = localStorage.getItem("selectedCourse")
+    const savedSemester = localStorage.getItem("selectedSemester")
+    const savedPhase = localStorage.getItem("selectedPhase")
+    const savedBatch = localStorage.getItem("selectedBatch")
+
+    let defaultCourse = ""
+    let defaultSemester = ""
+    let defaultPhase = "1"
+    let defaultBatch = ""
+
+    // courses
+    if (metadata.courses?.length > 0) {
+      if (savedCourse && metadata.courses.some(c => c.id === savedCourse)) {
+        defaultCourse = savedCourse
+      } else {
+        defaultCourse = metadata.courses[0].id
+      }
     }
+
+    // semester
+    const semestersForCourse = metadata.semesters[defaultCourse] || []
+    if (semestersForCourse.length > 0) {
+      if (savedSemester && semestersForCourse.some(s => s.id === savedSemester)) {
+        defaultSemester = savedSemester
+      } else {
+        defaultSemester = semestersForCourse[0].id
+      }
+    }
+
+    // phase
+    const phasesForCourseSem = metadata?.phases?.[defaultCourse]?.[defaultSemester] || []
+    if (phasesForCourseSem.length > 0) {
+      if (savedPhase && phasesForCourseSem.some(p => p.id === savedPhase)) {
+        defaultPhase = savedPhase
+      } else {
+        defaultPhase = phasesForCourseSem[0].id
+      }
+    }
+
+    // batch
+    const batchesForCourseSemPhase = metadata?.batches?.[defaultCourse]?.[defaultSemester]?.[defaultPhase] || []
+    if (batchesForCourseSemPhase.length > 0) {
+      if (savedBatch && batchesForCourseSemPhase.some(b => b.id === savedBatch)) {
+        defaultBatch = savedBatch
+      } else {
+        defaultBatch = batchesForCourseSemPhase[0].id
+      }
+    }
+
+    setCourse(defaultCourse)
+    setSemester(defaultSemester)
+    setPhase(defaultPhase)
+    setBatch(defaultBatch)
+  }, [metadata])
+
+  React.useEffect(() => {
+    // If we haven’t loaded metadata yet, or missing required filters, skip
+    if (!metadata || !course || !semester || !phase || !day) {
+      return
+    }
+
+    async function loadAllClasses() {
+      const cacheKey = `allClasses_${course}_${semester}_${phase}_${batch}`
+      let localClasses = null
+      const cached = localStorage.getItem(cacheKey)
+      if (cached) {
+        const cachedJSON = JSON.parse(cached)
+        setDataForTimeline(cachedJSON.classes[day] || [])
+      } else {
+        setShowSkeleton(true)
+      }
+
+      if (offline) {
+        setShowSkeleton(false)
+        return
+      }
+
+      try {
+        setUpdateStatus("checking-classes")
+        const versionUrl = `/api/allclasses-version?course=${encodeURIComponent(course)}&semester=${encodeURIComponent(semester)}&phase=${encodeURIComponent(phase)}&batch=${encodeURIComponent(batch)}`
+        const versionRes = await fetch(versionUrl)
+        const versionData = await versionRes.json()
+        const currentServerVersion = versionData.cacheVersion
+
+        let needUpdate = true
+        if (cached) {
+          const cachedObj = JSON.parse(cached)
+          if (cachedObj.cacheVersion && cachedObj.cacheVersion === currentServerVersion) {
+            needUpdate = false
+          }
+        }
+
+        if (needUpdate) {
+          setUpdateStatus("updating-classes")
+          // fetch new
+          const urlAll = `/api/allclasses?course=${encodeURIComponent(course)}&semester=${encodeURIComponent(semester)}&phase=${encodeURIComponent(phase)}&batch=${encodeURIComponent(batch)}`
+          const allRes = await fetch(urlAll)
+          const allData = await allRes.json()
+
+          localStorage.setItem(cacheKey, JSON.stringify(allData))
+          setDataForTimeline(allData.classes[day] || [])
+        }
+
+        setUpdateStatus("")
+      } catch (err) {
+        console.error("Error fetching classes", err)
+        setUpdateStatus("error-classes")
+      } finally {
+        setShowSkeleton(false)
+      }
+    }
+
+    loadAllClasses()
   }, [metadata, course, semester, phase, batch, day, offline])
 
   // Helper to set the timeline items and unique times
@@ -266,14 +268,15 @@ export default function Page() {
     cardRefs.current = classesData.map(() => React.createRef())
   }
 
-  // To highlight active class
+  // Highlight the active card (if current time in range)
   function isCardTimeActive(item) {
     const startMin = timeToMinutes(item.start)
     const endMin = timeToMinutes(item.end)
     return currentTimeMin >= startMin && currentTimeMin <= endMin
+      && daysOfWeek[new Date().getDay()] === day
   }
 
-  // Prepare lists for filters
+  // Filter-lists for dropdowns
   const courses = metadata?.courses || []
   const semestersForCourse = course ? (metadata?.semesters[course] || []) : []
   const phasesForCourseSem = (course && semester)
@@ -288,7 +291,7 @@ export default function Page() {
     setCourse(val)
     localStorage.setItem("selectedCourse", val)
 
-    // Reset semester when course changes
+    // Reset semester
     const firstSem = (metadata?.semesters[val] || [])[0]
     const newSem = firstSem ? firstSem.id : ""
     setSemester(newSem)
@@ -359,7 +362,7 @@ export default function Page() {
     localStorage.setItem("selectedBatch", val)
   }
 
-  // Add pull-to-refresh
+  // Register Service Worker (pull-to-refresh on mobile, etc.)
   React.useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js');
@@ -368,43 +371,46 @@ export default function Page() {
 
   // Add swipe handlers to change days
   const [slideDirection, setSlideDirection] = React.useState(0)
-
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () => {
-      const currentIndex = daysOfWeek.indexOf(day);
-      const nextIndex = (currentIndex + 1) % daysOfWeek.length;
-      setSlideDirection(1);
-      setDay(daysOfWeek[nextIndex]);
+      const currentIndex = daysOfWeek.indexOf(day)
+      const nextIndex = (currentIndex + 1) % daysOfWeek.length
+      setSlideDirection(1)
+      setDay(daysOfWeek[nextIndex])
     },
     onSwipedRight: () => {
-      const currentIndex = daysOfWeek.indexOf(day);
-      const prevIndex = (currentIndex - 1 + daysOfWeek.length) % daysOfWeek.length;
-      setSlideDirection(-1);
-      setDay(daysOfWeek[prevIndex]);
+      const currentIndex = daysOfWeek.indexOf(day)
+      const prevIndex = (currentIndex - 1 + daysOfWeek.length) % daysOfWeek.length
+      setSlideDirection(-1)
+      setDay(daysOfWeek[prevIndex])
     },
     preventDefaultTouchmoveEvent: true,
     trackMouse: false
-  });
+  })
 
+  // Possibly show “swipe hint” once
   React.useEffect(() => {
-    // Show hint only if it hasn't been shown before
     const hasSeenHint = localStorage.getItem('hasSeenSwipeHint')
-    if (!hasSeenHint && !loading && timelineItems.length > 0) {
+    if (!hasSeenHint && !showSkeleton && timelineItems.length > 0) {
       setShowSwipeHint(true)
     }
-  }, [loading, timelineItems])
+  }, [showSkeleton, timelineItems])
 
   function dismissHint() {
     setShowSwipeHint(false)
     localStorage.setItem('hasSeenSwipeHint', 'true')
   }
 
+  // Render
   return (
     <div className="min-h-screen flex flex-col" {...swipeHandlers}>
       <Navbar />
 
+      {/* UpdateIndicator is absolutely positioned (see its CSS). */}
+      <UpdateIndicator status={updateStatus} />
+
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-4 relative">
-        {/* Header and Filters - Normal flow */}
+        {/* Header and Filters */}
         <div className="bg-background/80 backdrop-blur-sm mb-4">
           <div className="flex items-center pl-[10px] justify-between mb-4">
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -450,57 +456,49 @@ export default function Page() {
                 </Select>
               </div>
 
-              {/* Rest of your filter selects */}
-              {/* Course Select */}
+              {/* Course */}
               <div className="flex items-center gap-2">
-                {/* Course */}
-                <div className="flex items-center gap-2">
-                  <span className="w-24 text-right">Course:</span>
-                  <Select
-                    value={course}
-                    onValueChange={handleCourseChange}
-                    disabled={courses.length === 0}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select course" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {courses.map(c => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
+                <span className="w-24 text-right">Course:</span>
+                <Select
+                  value={course}
+                  onValueChange={handleCourseChange}
+                  disabled={courses.length === 0}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select course" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courses.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Semester Select */}
+              {/* Semester */}
               <div className="flex items-center gap-2">
-                {/* Semester */}
-                <div className="flex items-center gap-2">
-                  <span className="w-24 text-right">Semester:</span>
-                  <Select
-                    value={semester}
-                    onValueChange={handleSemesterChange}
-                    disabled={semestersForCourse.length === 0}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select semester" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {semestersForCourse.map(s => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <span className="w-24 text-right">Semester:</span>
+                <Select
+                  value={semester}
+                  onValueChange={handleSemesterChange}
+                  disabled={semestersForCourse.length === 0}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select semester" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {semestersForCourse.map(s => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Phase Select */}
+              {/* Phase */}
               <div className="flex items-center gap-2">
                 <span className="w-24 text-right">Phase:</span>
                 <Select
@@ -521,7 +519,7 @@ export default function Page() {
                 </Select>
               </div>
 
-              {/* Batch Select */}
+              {/* Batch */}
               <div className="flex items-center gap-2">
                 <span className="w-24 text-right">Batch:</span>
                 <Select
@@ -545,7 +543,7 @@ export default function Page() {
           </motion.div>
         </div>
 
-        {/* Main content */}
+        {/* Main content area (timeline + cards) */}
         <div className="relative" style={{ minHeight: '500px' }}>
           <AnimatePresence initial={false} custom={slideDirection} mode="sync">
             <motion.div
@@ -560,7 +558,8 @@ export default function Page() {
                 opacity: { duration: 0.2 }
               }}
             >
-              {loading ? (
+              {showSkeleton ? (
+                // Skeleton
                 <div className="relative flex gap-16">
                   {/* Timeline skeleton */}
                   <div className="relative" style={{ minWidth: '50px' }}>
@@ -568,6 +567,7 @@ export default function Page() {
                       className="relative w-[2px] bg-gray-300 dark:bg-gray-600 mx-auto transition-all"
                       style={{ height: '500px' }}
                     >
+                      {/* Some skeleton circles */}
                       <div
                         className="absolute w-4 h-4 rounded-full bg-gray-300 dark:bg-gray-700"
                         style={{
@@ -633,7 +633,7 @@ export default function Page() {
               ) : timelineItems.length === 0 ? (
                 offline ? (
                   <div className="text-center text-muted-foreground">
-                    You are offline and no cached data available for these filters.
+                    You are offline and no cached data is available for these filters.
                   </div>
                 ) : (
                   <div className="text-center text-muted-foreground">
@@ -641,6 +641,7 @@ export default function Page() {
                   </div>
                 )
               ) : (
+                // Actual timeline
                 <div className="relative flex gap-16">
                   <Timeline
                     timelineItems={timelineItems}
@@ -650,8 +651,7 @@ export default function Page() {
 
                   <div className="flex-1 space-y-10 text-foreground transition-all">
                     {timelineItems.map((item, index) => {
-
-                      const timeActive = isCardTimeActive(item) && daysOfWeek[new Date().getDay()] == day
+                      const timeActive = isCardTimeActive(item)
                       return (
                         <div key={index} ref={cardRefs.current[index]}>
                           <CardItem item={item} timeActive={timeActive} className="card" />
@@ -664,12 +664,15 @@ export default function Page() {
             </motion.div>
           </AnimatePresence>
         </div>
-        {!loading && timelineItems.length > 0 && (
+
+        {/* small swipe-hint text or arrow */}
+        {!showSkeleton && timelineItems.length > 0 && (
           <div className="text-xs text-center text-muted-foreground mt-2 absolute bottom-4 left-0 right-0">
             Swipe left/right to change days
           </div>
         )}
       </main>
+
       {showSwipeHint && <SwipeHint onDismiss={dismissHint} />}
       <Footer />
     </div>
