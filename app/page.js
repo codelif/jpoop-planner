@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useSchedule } from "@/app/hooks/useSchedule"
 import { Navbar } from "@/components/Navbar"
@@ -47,11 +48,27 @@ export default function Page() {
     dismissHint,
   } = useSchedule()
 
+  const [showTimeline, setShowTimeline] = React.useState(true)
+
+  React.useEffect(() => {
+    const stored = localStorage.getItem("showTimeline")
+    if (stored === "false") {
+      setShowTimeline(false)
+    }
+  }, [])
+
+  function handleToggleTimeline(newVal) {
+    setShowTimeline(newVal)
+    localStorage.setItem("showTimeline", newVal ? "true" : "false")
+  }
+
   return (
     <div className="min-h-screen flex flex-col" {...swipeHandlers}>
-      <Navbar />
+      <Navbar
+        showTimeline={showTimeline}
+        onToggleTimeline={handleToggleTimeline}
+      />
 
-      {/* UpdateIndicator is absolutely positioned (see its CSS). */}
       <UpdateIndicator status={updateStatus} />
 
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-4 relative">
@@ -75,7 +92,6 @@ export default function Page() {
           setFiltersOpen={setFiltersOpen}
         />
 
-        {/* Main content area (timeline + cards) */}
         <div className="relative" style={{ minHeight: "500px" }}>
           <AnimatePresence initial={false} custom={slideDirection} mode="sync">
             <motion.div
@@ -95,13 +111,17 @@ export default function Page() {
               ) : timelineItems.length === 0 ? (
                 <NoScheduleResults offline={offline} />
               ) : (
-                // Actual timeline
                 <div className="relative flex gap-16">
-                  <Timeline
-                    timelineItems={timelineItems}
-                    uniqueTimes={uniqueTimes}
-                    cardRefs={cardRefs.current}
-                  />
+                  {/*
+                    Conditionally render the Timeline if showTimeline = true
+                  */}
+                  {showTimeline && (
+                    <Timeline
+                      timelineItems={timelineItems}
+                      uniqueTimes={uniqueTimes}
+                      cardRefs={cardRefs.current}
+                    />
+                  )}
 
                   <div className="flex-1 space-y-10 text-foreground transition-all">
                     {timelineItems.map((item, index) => {
@@ -119,7 +139,6 @@ export default function Page() {
           </AnimatePresence>
         </div>
 
-        {/* small "swipe-hint" text. Alternatively remove if not needed. */}
         {!showSkeleton && timelineItems.length > 0 && (
           <div className="text-xs text-center text-muted-foreground mt-2 absolute bottom-4 left-0 right-0">
             Swipe left/right to change days

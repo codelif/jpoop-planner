@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 
 /**
- * ScheduleFilters - Provides day/course/semester/phase/batch selection inputs.
+ * ScheduleFilters
  */
 export function ScheduleFilters({
   day,
@@ -34,21 +34,18 @@ export function ScheduleFilters({
 }) {
   return (
     <div className="bg-background/80 backdrop-blur-sm mb-4">
+      {/* Top bar with selected day/batch and the "Filters" toggle button */}
       <div className="flex items-center pl-[10px] justify-between mb-4">
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span>{day}</span>
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <span className="font-medium">{day}</span>
           {batch && (
             <>
               <span>•</span>
-              <span>{batch.toUpperCase()}</span>
+              <span className="font-medium">{batch.toUpperCase()}</span>
             </>
           )}
         </div>
-        <Button
-          variant="outline"
-          onClick={() => setFiltersOpen(!filtersOpen)}
-          className="relative"
-        >
+        <Button variant="outline" onClick={() => setFiltersOpen(!filtersOpen)}>
           {filtersOpen ? "Hide Filters" : "Filters"}
         </Button>
       </div>
