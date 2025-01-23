@@ -1,4 +1,6 @@
-import { SettingsModal } from "@/components/SettingsModal"
+import { SettingsModal } from "@/components/SettingsModal";
+import { Github } from "lucide-react";
+import { Button } from "./ui/button";
 
 export function Navbar({ showTimeline, onToggleTimeline }) {
   return (
@@ -11,8 +13,14 @@ export function Navbar({ showTimeline, onToggleTimeline }) {
           </div>
         </div>
 
-        {/* Only a button that opens the Settings Modal */}
         <div className="flex items-center gap-4">
+          <Button variant="ghost" asChild>
+            <a href="https://github.com/codelif/jpoop-planner" target="_blank" rel="noopener noreferrer">
+              <Github className="h-5 w-5" />
+            </a>
+          </Button>
+
+          {/* Settings Modal */}
           <SettingsModal
             showTimeline={showTimeline}
             onToggleTimeline={onToggleTimeline}
