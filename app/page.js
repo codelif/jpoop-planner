@@ -15,6 +15,7 @@ import { NoScheduleResults } from "@/components/NoScheduleResults"
 
 import { slideVariants } from "@/app/lib/motion"
 
+
 const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
 export default function Page() {
@@ -46,6 +47,7 @@ export default function Page() {
     slideDirection,
     showSwipeHint,
     dismissHint,
+    noScheduleResultsText
   } = useSchedule()
 
   const [showTimeline, setShowTimeline] = React.useState(true)
@@ -61,6 +63,7 @@ export default function Page() {
     setShowTimeline(newVal)
     localStorage.setItem("showTimeline", newVal ? "true" : "false")
   }
+
 
   return (
     <div className="min-h-screen flex flex-col" {...swipeHandlers}>
@@ -109,12 +112,10 @@ export default function Page() {
               {showSkeleton ? (
                 <ScheduleSkeleton />
               ) : timelineItems.length === 0 ? (
-                <NoScheduleResults offline={offline} />
+                <NoScheduleResults text={noScheduleResultsText} />
               ) : (
                 <div className="relative flex gap-16">
-                  {/*
-                    Conditionally render the Timeline if showTimeline = true
-                  */}
+                  {/* Conditionally render the Timeline if showTimeline = true */}
                   {showTimeline && (
                     <Timeline
                       timelineItems={timelineItems}

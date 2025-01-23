@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jiit-planner-cache-v2025-01-23_02-38-00';
+const CACHE_NAME = 'jiit-planner-cache-v2025-01-24_02-45-24';
 const urlsToCache = [
     '/',
     // Add other assets you want to cache
@@ -79,4 +79,10 @@ self.addEventListener('notificationclick', function (event) {
     console.log('Notification click received.');
     event.notification.close();
     event.waitUntil(clients.openWindow('/'));
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

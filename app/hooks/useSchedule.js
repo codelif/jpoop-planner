@@ -24,6 +24,10 @@ export function useSchedule() {
   // For highlighting the current time slot
   const [currentTimeMin, setCurrentTimeMin] = React.useState(getCurrentTimeMin())
 
+  // Service Worker update states
+  const [serviceWorkerUpdated, setServiceWorkerUpdated] = React.useState(false)
+  const [serviceWorkerRegistration, setServiceWorkerRegistration] = React.useState(null)
+
   // Metadata and filters
   const [metadata, setMetadata] = React.useState(null)
   const [day, setDay] = React.useState(daysOfWeek[new Date().getDay()])
@@ -40,9 +44,10 @@ export function useSchedule() {
   const [filtersOpen, setFiltersOpen] = React.useState(false)
   const [showSkeleton, setShowSkeleton] = React.useState(false)
   const [offline, setOffline] = React.useState(!navigator.onLine)
+  const [noScheduleResultsText, setNoScheduleResultsText] = React.useState("No classes found for the selected filters.")
   const [showSwipeHint, setShowSwipeHint] = React.useState(false)
 
-  // A simple status string for “checking”, “updating”, “updated”, “error”, etc.
+  // A simple status string for "checking", "updating", "updated", "error", etc.
   const [updateStatus, setUpdateStatus] = React.useState("")
 
   // Keep current time updated every minute
@@ -71,6 +76,12 @@ export function useSchedule() {
 
   // 1) Load/fetch metadata on mount or if offline changes
   React.useEffect(() => {
+    if (offline) {
+      setNoScheduleResultsText("You are offline and no cached data is available for these filters.");
+    } else {
+      setNoScheduleResultsText("No classes found for the selected filters.");
+    }
+
     async function loadMetadata() {
       let localData = null
       const cached = localStorage.getItem("metadata")
@@ -366,10 +377,44 @@ export function useSchedule() {
     localStorage.setItem("selectedBatch", val)
   }
 
-  // Register Service Worker once
+  /**
+   * Register the Service Worker and watch for updates.
+   * If a new SW is installed and controlling the page, we set `serviceWorkerUpdated = true`.
+   */
   React.useEffect(() => {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js")
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((registration) => {
+          // Listen for new Service Worker
+          registration.onupdatefound = () => {
+            const newWorker = registration.installing
+            if (newWorker) {
+              newWorker.onstatechange = () => {
+                // If the new worker is installed and the page already has a controlling worker
+                if (
+                  newWorker.state === "installed" &&
+                  navigator.serviceWorker.controller
+                ) {
+                  setServiceWorkerUpdated(true)
+                  setServiceWorkerRegistration(registration)
+                }
+              }
+            }
+          }
+        })
+        .catch((err) => {
+          console.error("SW registration failed:", err)
+        })
+
+      // Reload page when the new SW activates
+      let refreshing = false
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (!refreshing) {
+          refreshing = true
+          window.location.reload()
+        }
+      })
     }
   }, [])
 
@@ -433,5 +478,6 @@ export function useSchedule() {
     slideDirection,
     showSwipeHint,
     dismissHint,
+    noScheduleResultsText,
   }
 }
