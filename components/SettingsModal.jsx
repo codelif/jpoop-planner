@@ -106,10 +106,9 @@ export function SettingsModal({
             </SwitchPrimitive.Root>
           </div>
 
-          {/* TABLE MODE SWITCH */}
           <div className="flex items-center justify-between mb-6">
             <label className="text-sm font-medium" htmlFor="tableModeSwitch">
-              Table Mode
+              Compact Mode (BETA)
             </label>
             <SwitchPrimitive.Root
               id="tableModeSwitch"
