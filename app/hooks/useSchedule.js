@@ -39,6 +39,8 @@ export function useSchedule() {
   // Classes data
   const [timelineItems, setTimelineItems] = React.useState([])
   const [uniqueTimes, setUniqueTimes] = React.useState([])
+  // Store the entire week’s classes so we can display in Table Mode
+  const [allDaysClasses, setAllDaysClasses] = React.useState({})
 
   // UI states
   const [filtersOpen, setFiltersOpen] = React.useState(false)
@@ -49,6 +51,22 @@ export function useSchedule() {
 
   // A simple status string for "checking", "updating", "updated", "error", etc.
   const [updateStatus, setUpdateStatus] = React.useState("")
+
+  // NEW: Table Mode
+  const [tableMode, setTableMode] = React.useState(false)
+
+  React.useEffect(() => {
+    // On first mount, read tableMode from localStorage
+    const stored = localStorage.getItem("tableMode")
+    if (stored === "true") {
+      setTableMode(true)
+    }
+  }, [])
+
+  function handleToggleTableMode(value) {
+    setTableMode(value)
+    localStorage.setItem("tableMode", value ? "true" : "false")
+  }
 
   // Keep current time updated every minute
   React.useEffect(() => {
@@ -198,9 +216,11 @@ export function useSchedule() {
       const cacheKey = `allClasses_${course}_${semester}_${phase}_${batch}`
       let localClasses = null
       const cached = localStorage.getItem(cacheKey)
+      let cachedObj = null
       if (cached) {
-        const cachedJSON = JSON.parse(cached)
-        setDataForTimeline(cachedJSON.classes[day] || [])
+        cachedObj = JSON.parse(cached)
+        // We only set timeline for the *current day* here
+        setDataForTimeline(cachedObj.classes[day] || [], cachedObj.classes)
       } else {
         setShowSkeleton(true)
       }
@@ -224,14 +244,8 @@ export function useSchedule() {
         const currentServerVersion = versionData.cacheVersion
 
         let needUpdate = true
-        if (cached) {
-          const cachedObj = JSON.parse(cached)
-          if (
-            cachedObj.cacheVersion &&
-            cachedObj.cacheVersion === currentServerVersion
-          ) {
-            needUpdate = false
-          }
+        if (cachedObj && cachedObj.cacheVersion === currentServerVersion) {
+          needUpdate = false
         }
 
         if (needUpdate) {
@@ -248,7 +262,7 @@ export function useSchedule() {
           const allData = await allRes.json()
 
           localStorage.setItem(cacheKey, JSON.stringify(allData))
-          setDataForTimeline(allData.classes[day] || [])
+          setDataForTimeline(allData.classes[day] || [], allData.classes)
         }
 
         setUpdateStatus("")
@@ -263,17 +277,22 @@ export function useSchedule() {
     loadAllClasses()
   }, [metadata, course, semester, phase, batch, day, offline])
 
-  // Helper to set the timeline items and unique times
-  function setDataForTimeline(classesData) {
-    setTimelineItems(classesData)
+  // Helper to set the timeline items and allDaysClasses
+  function setDataForTimeline(classesForDay, allClassesForWeek) {
+    setTimelineItems(classesForDay)
+    // Also store the entire dictionary of { Sunday: [...], Monday: [...], ... }
+    if (allClassesForWeek) {
+      setAllDaysClasses(allClassesForWeek)
+    }
+    // Build unique times from the day’s data
     const allTimes = []
-    classesData.forEach((item) => {
+    classesForDay.forEach((item) => {
       allTimes.push(item.start, item.end)
     })
     const unique = Array.from(new Set(allTimes))
     unique.sort((a, b) => timeToMinutes(a) - timeToMinutes(b))
     setUniqueTimes(unique)
-    cardRefs.current = classesData.map(() => React.createRef())
+    cardRefs.current = classesForDay.map(() => React.createRef())
   }
 
   // Highlight the active card (if current time in range)
@@ -418,16 +437,18 @@ export function useSchedule() {
     }
   }, [])
 
-  // Add swipe handlers to change days
+  // Add swipe handlers to change days (only if not in Table Mode)
   const [slideDirection, setSlideDirection] = React.useState(0)
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () => {
+      if (tableMode) return // disable day-swipe in table mode
       const currentIndex = daysOfWeek.indexOf(day)
       const nextIndex = (currentIndex + 1) % daysOfWeek.length
       setSlideDirection(1)
       setDay(daysOfWeek[nextIndex])
     },
     onSwipedRight: () => {
+      if (tableMode) return // disable day-swipe in table mode
       const currentIndex = daysOfWeek.indexOf(day)
       const prevIndex = (currentIndex - 1 + daysOfWeek.length) % daysOfWeek.length
       setSlideDirection(-1)
@@ -437,13 +458,13 @@ export function useSchedule() {
     trackMouse: false,
   })
 
-  // Possibly show “swipe hint” once
+  // Possibly show “swipe hint” once if not in Table Mode
   React.useEffect(() => {
     const hasSeenHint = localStorage.getItem("hasSeenSwipeHint")
-    if (!hasSeenHint && !showSkeleton && timelineItems.length > 0) {
+    if (!hasSeenHint && !showSkeleton && timelineItems.length > 0 && !tableMode) {
       setShowSwipeHint(true)
     }
-  }, [showSkeleton, timelineItems])
+  }, [showSkeleton, timelineItems, tableMode])
 
   function dismissHint() {
     setShowSwipeHint(false)
@@ -451,6 +472,7 @@ export function useSchedule() {
   }
 
   return {
+    // Expose existing states and handlers
     day,
     setDay,
     course,
@@ -479,5 +501,10 @@ export function useSchedule() {
     showSwipeHint,
     dismissHint,
     noScheduleResultsText,
+
+    // New Table Mode states
+    tableMode,
+    handleToggleTableMode,
+    allDaysClasses,
   }
 }

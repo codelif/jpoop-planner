@@ -31,18 +31,23 @@ export function ScheduleFilters({
   handleBatchChange,
   filtersOpen,
   setFiltersOpen,
+
+  // optional to hide day filter (used in table mode)
+  hideDayFilter = false,
 }) {
   return (
     <div className="bg-background/80 backdrop-blur-sm mb-4">
-      {/* Top bar with selected day/batch and the "Filters" toggle button */}
+      {/* Top bar with selected day/batch and the "Filters" toggle button (only show day if not hidden) */}
       <div className="flex items-center pl-[10px] justify-between mb-4">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span className="font-medium">{day}</span>
-          {batch && (
+          {!hideDayFilter && (
             <>
-              <span>•</span>
-              <span className="font-medium">{batch.toUpperCase()}</span>
+            <span className="font-medium">{day}</span>
+            <span>•</span>
             </>
+          )}
+          {batch && (
+              <span className="font-medium">{batch.toUpperCase()}</span>
           )}
         </div>
         <Button variant="outline" onClick={() => setFiltersOpen(!filtersOpen)}>
@@ -63,22 +68,24 @@ export function ScheduleFilters({
         className="overflow-hidden"
       >
         <div className="grid grid-cols-2 gap-4 pb-4">
-          {/* Day Select */}
-          <div className="flex items-center gap-2">
-            <span className="w-24 text-right">Day:</span>
-            <Select value={day} onValueChange={setDay}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select day" />
-              </SelectTrigger>
-              <SelectContent>
-                {daysOfWeek.map((d) => (
-                  <SelectItem key={d} value={d}>
-                    {d}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Day Select (hidden if hideDayFilter is true) */}
+          {!hideDayFilter && (
+            <div className="flex items-center gap-2">
+              <span className="w-24 text-right">Day:</span>
+              <Select value={day} onValueChange={setDay}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select day" />
+                </SelectTrigger>
+                <SelectContent>
+                  {daysOfWeek.map((d) => (
+                    <SelectItem key={d} value={d}>
+                      {d}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Course */}
           <div className="flex items-center gap-2">
@@ -168,3 +175,4 @@ export function ScheduleFilters({
     </div>
   )
 }
+

@@ -12,9 +12,10 @@ import { UpdateIndicator } from "@/components/UpdateIndicator"
 import { ScheduleFilters } from "@/components/ScheduleFilters"
 import { ScheduleSkeleton } from "@/components/ScheduleSkeleton"
 import { NoScheduleResults } from "@/components/NoScheduleResults"
-
 import { slideVariants } from "@/app/lib/motion"
 
+// NEW: Import TableView
+import { ScheduleTableView } from "@/components/ScheduleTableView"
 
 const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
@@ -47,7 +48,12 @@ export default function Page() {
     slideDirection,
     showSwipeHint,
     dismissHint,
-    noScheduleResultsText
+    noScheduleResultsText,
+
+    // table mode
+    tableMode,
+    handleToggleTableMode,
+    allDaysClasses,
   } = useSchedule()
 
   const [showTimeline, setShowTimeline] = React.useState(true)
@@ -64,12 +70,66 @@ export default function Page() {
     localStorage.setItem("showTimeline", newVal ? "true" : "false")
   }
 
+  // If we are in tableMode, show the new table-based schedule
+  if (tableMode) {
+    return (
+      <div className="min-h-screen flex flex-col overflow-x-hidden" {...swipeHandlers}>
+        <Navbar
+          showTimeline={showTimeline}
+          onToggleTimeline={handleToggleTimeline}
+          tableMode={tableMode}
+          onToggleTableMode={handleToggleTableMode}
+        />
 
+        <UpdateIndicator status={updateStatus} />
+
+        {/* We hide the day-based filters in table mode, but still show the course/semester/batch/phase filters. 
+            Feel free to remove "day" entirely. */}
+        <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-4 relative overflow-auto">
+          <ScheduleFilters
+            day={day}
+            daysOfWeek={daysOfWeek}
+            setDay={setDay}
+            courses={courses}
+            course={course}
+            handleCourseChange={handleCourseChange}
+            semestersForCourse={semestersForCourse}
+            semester={semester}
+            handleSemesterChange={handleSemesterChange}
+            phasesForCourseSem={phasesForCourseSem}
+            phase={phase}
+            handlePhaseChange={handlePhaseChange}
+            batchesForCourseSemPhase={batchesForCourseSemPhase}
+            batch={batch}
+            handleBatchChange={handleBatchChange}
+            filtersOpen={filtersOpen}
+            setFiltersOpen={setFiltersOpen}
+            // We'll pass a prop to hide the "Day" filter entirely
+            hideDayFilter
+          />
+
+          {showSkeleton ? (
+            <ScheduleSkeleton />
+          ) : Object.keys(allDaysClasses).length === 0 ? (
+            <NoScheduleResults text={noScheduleResultsText} />
+          ) : (
+            <ScheduleTableView allDaysClasses={allDaysClasses} />
+          )}
+        </main>
+
+        <Footer />
+      </div>
+    )
+  }
+
+  // Normal “day/timeline” view
   return (
     <div className="min-h-screen flex flex-col" {...swipeHandlers}>
       <Navbar
         showTimeline={showTimeline}
         onToggleTimeline={handleToggleTimeline}
+        tableMode={tableMode}
+        onToggleTableMode={handleToggleTableMode}
       />
 
       <UpdateIndicator status={updateStatus} />
@@ -93,6 +153,7 @@ export default function Page() {
           handleBatchChange={handleBatchChange}
           filtersOpen={filtersOpen}
           setFiltersOpen={setFiltersOpen}
+          // not hiding day filter in normal mode
         />
 
         <div className="relative" style={{ minHeight: "500px" }}>
@@ -115,7 +176,6 @@ export default function Page() {
                 <NoScheduleResults text={noScheduleResultsText} />
               ) : (
                 <div className="relative flex gap-16">
-                  {/* Conditionally render the Timeline if showTimeline = true */}
                   {showTimeline && (
                     <Timeline
                       timelineItems={timelineItems}
@@ -152,3 +212,4 @@ export default function Page() {
     </div>
   )
 }
+

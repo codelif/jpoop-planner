@@ -7,7 +7,12 @@ import { X, Settings } from "lucide-react"
 import { useTheme } from "next-themes"
 import * as SwitchPrimitive from "@radix-ui/react-switch"
 
-export function SettingsModal({ showTimeline, onToggleTimeline }) {
+export function SettingsModal({
+  showTimeline,
+  onToggleTimeline,
+  tableMode,
+  onToggleTableMode,
+}) {
   const [open, setOpen] = React.useState(false)
 
   // Dark Mode integration
@@ -101,6 +106,32 @@ export function SettingsModal({ showTimeline, onToggleTimeline }) {
             </SwitchPrimitive.Root>
           </div>
 
+          {/* TABLE MODE SWITCH */}
+          <div className="flex items-center justify-between mb-6">
+            <label className="text-sm font-medium" htmlFor="tableModeSwitch">
+              Table Mode
+            </label>
+            <SwitchPrimitive.Root
+              id="tableModeSwitch"
+              checked={tableMode}
+              onCheckedChange={onToggleTableMode}
+              className="
+                relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent
+                bg-input transition-colors
+                data-[state=checked]:bg-primary
+                focus:outline-none focus-visible:ring-2
+                focus-visible:ring-ring focus-visible:ring-offset-2
+              "
+            >
+              <SwitchPrimitive.Thumb
+                className="
+                  pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform
+                  data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0
+                "
+              />
+            </SwitchPrimitive.Root>
+          </div>
+
           {/* Close Button (X) */}
           <Dialog.Close asChild>
             <Button variant="secondary" className="absolute top-4 right-4 rounded-full h-8 w-8 p-0">
@@ -113,3 +144,4 @@ export function SettingsModal({ showTimeline, onToggleTimeline }) {
     </Dialog.Root>
   )
 }
+

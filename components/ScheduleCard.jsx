@@ -5,24 +5,26 @@ import { Calendar, User, Users, MapPin, BookOpen, FileText, FlaskConical, Tag } 
 /**
  * ScheduleCard - Renders details for a single class item.
  */
+
+export const getTypeBadge = (type) => {
+  switch (type) {
+    case 'L':
+      return { label: 'Lecture', icon: <BookOpen className="h-4 w-4" /> }
+    case 'T':
+      return { label: 'Tutorial', icon: <FileText className="h-4 w-4" /> }
+    case 'P':
+      return { label: 'Lab', icon: <FlaskConical className="h-4 w-4" /> }
+    default:
+      return { label: type, icon: <Tag className="h-4 w-4" /> }
+  }
+}
+
 export function ScheduleCard({ item, timeActive }) {
   let borderClasses = "border border-muted"
   if (timeActive) {
     borderClasses = "border-4 border-foreground"
   }
 
-  const getTypeBadge = (type) => {
-    switch (type) {
-      case 'L':
-        return { label: 'Lecture', icon: <BookOpen className="h-4 w-4" /> }
-      case 'T':
-        return { label: 'Tutorial', icon: <FileText className="h-4 w-4" /> }
-      case 'P':
-        return { label: 'Lab', icon: <FlaskConical className="h-4 w-4" /> }
-      default:
-        return { label: type, icon: <Tag className="h-4 w-4" /> }
-    }
-  }
 
   const { label, icon } = getTypeBadge(item.type)
 

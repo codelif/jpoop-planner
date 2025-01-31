@@ -2,7 +2,12 @@ import { SettingsModal } from "@/components/SettingsModal";
 import { Github } from "lucide-react";
 import { Button } from "./ui/button";
 
-export function Navbar({ showTimeline, onToggleTimeline }) {
+export function Navbar({
+  showTimeline,
+  onToggleTimeline,
+  tableMode,
+  onToggleTableMode
+}) {
   return (
     <header className="border-b bg-background sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between py-4 px-6">
@@ -24,6 +29,8 @@ export function Navbar({ showTimeline, onToggleTimeline }) {
           <SettingsModal
             showTimeline={showTimeline}
             onToggleTimeline={onToggleTimeline}
+            tableMode={tableMode}
+            onToggleTableMode={onToggleTableMode}
           />
         </div>
       </div>
