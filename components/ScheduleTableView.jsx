@@ -1,4 +1,3 @@
-
 "use client"
 
 import React from "react"
@@ -7,53 +6,61 @@ import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getTypeBadge } from "./ScheduleCard"
 
-// Utility to parse "HH:MM AM/PM" → hour (0-23)
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr) return null
+  const [time, meridiem] = timeStr.split(" ")
+  let [hours, minutes = 0] = time.split(":").map(Number)
+  if (meridiem?.toUpperCase() === "PM" && hours < 12) hours += 12
+  if (meridiem?.toUpperCase() === "AM" && hours === 12) hours = 0
+  return hours * 60 + minutes
+}
+
+function getRowSpan(startStr, endStr) {
+  const startMins = parseTimeToMinutes(startStr)
+  const endMins = parseTimeToMinutes(endStr)
+  if (startMins === null || endMins === null) return 1
+  // Calculate exact duration in hours, don't round up
+  const durationHours = (endMins - startMins) / 60
+  return durationHours
+}
+
 function parseHour(timeStr) {
   if (!timeStr) return null
   const [time, meridiem] = timeStr.split(" ")
-  let [hours] = time.split(":").map(Number)
+  let [hours, minutes = 0] = time.split(":").map(Number)
   if (meridiem?.toUpperCase() === "PM" && hours < 12) hours += 12
   if (meridiem?.toUpperCase() === "AM" && hours === 12) hours = 0
-  return hours
+  return hours + (minutes / 60)
 }
 
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
-/**
- * ScheduleTableView
- * @param {Object} props
- * @param {Object} props.allDaysClasses - { Sunday: [ {start,end,subject,...}, ...], Monday: [...], ... }
- */
 export function ScheduleTableView({ allDaysClasses }) {
   const [open, setOpen] = React.useState(false)
   const [selectedClass, setSelectedClass] = React.useState(null)
 
-  // 1) Gather all classes from all days, find earliest hour and latest hour.
-  //    For simplicity, we only care about the *start* hour to place them in the row.
   let earliest = 24
   let latest = 0
-  const dayClassMap = {} // day -> array of classes
+  const dayClassMap = {}
 
   for (const day of DAYS) {
     const classes = allDaysClasses[day] || []
     dayClassMap[day] = classes
     classes.forEach((cls) => {
-      const startHour = parseHour(cls.start)
-      const endHour = parseHour(cls.end) || 0
+      const startHour = Math.floor(parseHour(cls.start))
+      const endHour = Math.ceil(parseHour(cls.end))
       if (startHour !== null && startHour < earliest) earliest = startHour
-      if (endHour !== null && endHour + 1 > latest) latest = endHour + 1
+      if (endHour !== null && endHour > latest) latest = endHour
     })
   }
 
   if (earliest > latest) {
-    // No classes
     earliest = 9
     latest = 17
   }
 
-  // We'll create an array of hours from earliest..latest
   const hoursRange = []
-  for (let h = earliest; h < latest; h++) {
+  for (let h = earliest; h <= latest; h++) {
     hoursRange.push(h)
   }
 
@@ -67,27 +74,50 @@ export function ScheduleTableView({ allDaysClasses }) {
     setSelectedClass(null)
   }
 
-  // Minimal info in the cell
   function renderCell(day, hour) {
     const classes = dayClassMap[day] || []
-    // find any class that starts at 'hour'
-    const matching = classes.filter((cls) => {
+    const startingClasses = classes.filter((cls) => {
       const startHour = parseHour(cls.start)
-      return startHour === hour
+      return Math.floor(startHour) === hour
     })
-
-    if (matching.length === 0) {
+    
+    const hasOngoingClass = classes.some((cls) => {
+      const startHour = parseHour(cls.start)
+      const endHour = parseHour(cls.end)
+      return startHour < hour && endHour > hour
+    })
+    
+    if (hasOngoingClass) {
       return null
     }
 
-    return matching.map((cls, idx) => {
+    return startingClasses.map((cls, idx) => {
+      const rowSpan = getRowSpan(cls.start, cls.end)
+      const startHour = parseHour(cls.start)
+      const startOffset = (startHour - Math.floor(startHour)) * 100
+      const isMultiHour = rowSpan > 0
+      
       return (
         <div
           key={idx}
           onClick={() => openModal(cls)}
-          className="cursor-pointer mb-1 last:mb-0 bg-accent/20 border border-muted/50 rounded-md p-1 text-xs hover:bg-accent/40 transition-colors"
+          className={`
+            cursor-pointer bg-accent/20 border border-muted/50 rounded-sm p-1
+            hover:bg-accent/40 transition-colors
+            ${isMultiHour ? 'absolute inset-x-1' : 'h-full'}
+          `}
+          style={{
+            ...(isMultiHour && {
+              top: `${startOffset}%`,
+              height: `${rowSpan * 100}%`,
+              zIndex: 10
+            })
+          }}
         >
-          <div className="font-semibold">{cls.subject}</div>
+          <div className="font-semibold text-xs leading-tight">{cls.subject}</div>
+          <div className="text-muted-foreground text-[10px] leading-tight">
+            {cls.start} - {cls.end}
+          </div>
         </div>
       )
     })
@@ -95,17 +125,20 @@ export function ScheduleTableView({ allDaysClasses }) {
 
   return (
     <div className="w-full overflow-auto border rounded-md bg-background/70 relative">
-      <table className="w-full border-collapse text-sm min-w-[600px]">
+      <table className="w-full border-collapse text-xs min-w-[800px]">
         <thead>
-          <tr className="bg-muted/30 sticky top-0 z-10">
-            <th className="p-2 border-b border-muted text-left" style={{ minWidth: 60 }}>
+          <tr className="bg-muted/30 sticky top-0 z-20">
+            <th className="px-2 py-1 border-r border-muted text-left font-medium" style={{ width: '60px' }}>
               Time
             </th>
-            {DAYS.map((day) => (
+            {DAYS.map((day, index) => (
               <th
                 key={day}
-                className="p-2 border-b border-muted text-left"
-                style={{ minWidth: 100 }}
+                className={`
+                  px-2 py-1 text-left font-medium
+                  ${index < DAYS.length - 1 ? 'border-r border-muted' : ''}
+                `}
+                style={{ width: '1fr' }}
               >
                 {day}
               </th>
@@ -114,12 +147,19 @@ export function ScheduleTableView({ allDaysClasses }) {
         </thead>
         <tbody>
           {hoursRange.map((hour) => (
-            <tr key={hour} className="border-b border-muted hover:bg-muted/10">
-              <td className="p-2 font-medium text-muted-foreground">
+            <tr key={hour}>
+              <td className="px-2 py-1 font-medium text-muted-foreground whitespace-nowrap border-r border-muted">
                 {hour}:00
               </td>
-              {DAYS.map((day) => (
-                <td key={day} className="p-2 align-top">
+              {DAYS.map((day, index) => (
+                <td 
+                  key={day} 
+                  className={`
+                    px-1 py-1 relative
+                    ${index < DAYS.length - 1 ? 'border-r border-muted' : ''}
+                  `}
+                  style={{ height: '3.5rem' }}
+                >
                   {renderCell(day, hour)}
                 </td>
               ))}
@@ -128,7 +168,6 @@ export function ScheduleTableView({ allDaysClasses }) {
         </tbody>
       </table>
 
-      {/* Modal with full class info */}
       <Dialog open={open} onOpenChange={setOpen}>
         {selectedClass && (
           <div
