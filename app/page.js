@@ -59,6 +59,17 @@ export default function Page() {
   const [showTimeline, setShowTimeline] = React.useState(true)
 
   React.useEffect(() => {
+    const currentVersion = 'v2.0'
+    const storedVersion = localStorage.getItem('app-version')
+
+    if (!storedVersion || storedVersion !== currentVersion) {
+      localStorage.clear()
+    }
+
+    localStorage.setItem('app-version', currentVersion)
+  }, [])
+
+  React.useEffect(() => {
     const stored = localStorage.getItem("showTimeline")
     if (stored === "false") {
       setShowTimeline(false)
@@ -153,7 +164,7 @@ export default function Page() {
           handleBatchChange={handleBatchChange}
           filtersOpen={filtersOpen}
           setFiltersOpen={setFiltersOpen}
-          // not hiding day filter in normal mode
+        // not hiding day filter in normal mode
         />
 
         <div className="relative" style={{ minHeight: "500px" }}>
