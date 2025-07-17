@@ -59,7 +59,7 @@ export default function Page() {
   const [showTimeline, setShowTimeline] = React.useState(true)
 
   React.useEffect(() => {
-    const currentVersion = 'v2.0'
+    const currentVersion = 'v2.1'
     const storedVersion = localStorage.getItem('app-version')
 
     if (!storedVersion || storedVersion !== currentVersion) {
