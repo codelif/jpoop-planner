@@ -49,8 +49,6 @@ export default function Page() {
     showSwipeHint,
     dismissHint,
     noScheduleResultsText,
-
-    // table mode
     tableMode,
     handleToggleTableMode,
     allDaysClasses,
@@ -59,7 +57,7 @@ export default function Page() {
   const [showTimeline, setShowTimeline] = React.useState(true)
 
   React.useEffect(() => {
-    const currentVersion = 'v2.1'
+    const currentVersion = 'v2.2'
     const storedVersion = localStorage.getItem('app-version')
 
     if (!storedVersion || storedVersion !== currentVersion) {
