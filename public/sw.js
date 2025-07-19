@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jiit-planner-cache-v2025-07-19_17-58-34';
+const CACHE_NAME = 'jiit-planner-cache-v2025-07-20_04-10-51';
 const urlsToCache = [
     '/',
     // Add other assets you want to cache
@@ -33,17 +33,29 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+    // Skip caching entirely for API calls
+    if (event.request.url.includes('/api/')) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request)
             .then((response) => {
-                if (response && !event.request.url.includes('/api/')) {
+                // Return cached response if available
+                if (response) {
                     return response;
                 }
+                
+                // Fetch from network
                 return fetch(event.request).then(
                     (response) => {
+                        // Only cache successful responses
                         if (!response || response.status !== 200 || response.type !== 'basic') {
                             return response;
                         }
+                        
+                        // Clone the response before caching
                         const responseToCache = response.clone();
                         caches.open(CACHE_NAME)
                             .then((cache) => {
@@ -53,6 +65,7 @@ self.addEventListener('fetch', (event) => {
                     }
                 ).catch((error) => {
                     console.error('Failed to fetch and cache:', error);
+                    throw error;
                 });
             })
     );
