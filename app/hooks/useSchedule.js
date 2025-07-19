@@ -39,13 +39,14 @@ export function useSchedule() {
   // Classes data
   const [timelineItems, setTimelineItems] = React.useState([])
   const [uniqueTimes, setUniqueTimes] = React.useState([])
-  // Store the entire week’s classes so we can display in Table Mode
+  // Store the entire week's classes so we can display in Table Mode
   const [allDaysClasses, setAllDaysClasses] = React.useState({})
 
   // UI states
   const [filtersOpen, setFiltersOpen] = React.useState(false)
   const [showSkeleton, setShowSkeleton] = React.useState(false)
-  const [offline, setOffline] = React.useState(!navigator.onLine)
+  // Fix: Initialize offline state safely for SSR
+  const [offline, setOffline] = React.useState(false)
   const [noScheduleResultsText, setNoScheduleResultsText] = React.useState("No classes found for the selected filters.")
   const [showSwipeHint, setShowSwipeHint] = React.useState(false)
 
@@ -54,6 +55,13 @@ export function useSchedule() {
 
   // NEW: Table Mode
   const [tableMode, setTableMode] = React.useState(false)
+
+  // Fix: Set initial offline state after component mounts
+  React.useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      setOffline(!navigator.onLine)
+    }
+  }, [])
 
   React.useEffect(() => {
     // On first mount, read tableMode from localStorage
@@ -76,8 +84,10 @@ export function useSchedule() {
     return () => clearInterval(interval)
   }, [])
 
-  // Monitor online/offline changes
+  // Monitor online/offline changes - Fix: Check if navigator exists
   React.useEffect(() => {
+    if (typeof navigator === 'undefined') return
+
     function handleOnline() {
       setOffline(false)
     }
@@ -117,7 +127,13 @@ export function useSchedule() {
 
       try {
         setUpdateStatus("checking-metadata")
-        const res = await fetch("/api/metadata")
+        const res = await fetch("/api/metadata", {
+          cache: 'no-store', // Force no caching
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        })
         const freshData = await res.json()
 
         // If local is null or versions differ, update local
@@ -239,7 +255,14 @@ export function useSchedule() {
         )}&phase=${encodeURIComponent(phase)}&batch=${encodeURIComponent(
           batch
         )}`
-        const versionRes = await fetch(versionUrl)
+        
+        const versionRes = await fetch(versionUrl, {
+          cache: 'no-store', // Force no caching
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        })
         const versionData = await versionRes.json()
         const currentServerVersion = versionData.cacheVersion
 
@@ -258,7 +281,14 @@ export function useSchedule() {
           )}&phase=${encodeURIComponent(
             phase
           )}&batch=${encodeURIComponent(batch)}`
-          const allRes = await fetch(urlAll)
+          
+          const allRes = await fetch(urlAll, {
+            cache: 'no-store', // Force no caching
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          })
           const allData = await allRes.json()
 
           localStorage.setItem(cacheKey, JSON.stringify(allData))
@@ -284,7 +314,7 @@ export function useSchedule() {
     if (allClassesForWeek) {
       setAllDaysClasses(allClassesForWeek)
     }
-    // Build unique times from the day’s data
+    // Build unique times from the day's data
     const allTimes = []
     classesForDay.forEach((item) => {
       allTimes.push(item.start, item.end)
@@ -401,40 +431,40 @@ export function useSchedule() {
    * If a new SW is installed and controlling the page, we set `serviceWorkerUpdated = true`.
    */
   React.useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js")
-        .then((registration) => {
-          // Listen for new Service Worker
-          registration.onupdatefound = () => {
-            const newWorker = registration.installing
-            if (newWorker) {
-              newWorker.onstatechange = () => {
-                // If the new worker is installed and the page already has a controlling worker
-                if (
-                  newWorker.state === "installed" &&
-                  navigator.serviceWorker.controller
-                ) {
-                  setServiceWorkerUpdated(true)
-                  setServiceWorkerRegistration(registration)
-                }
+    if (typeof navigator === 'undefined' || !("serviceWorker" in navigator)) return
+
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((registration) => {
+        // Listen for new Service Worker
+        registration.onupdatefound = () => {
+          const newWorker = registration.installing
+          if (newWorker) {
+            newWorker.onstatechange = () => {
+              // If the new worker is installed and the page already has a controlling worker
+              if (
+                newWorker.state === "installed" &&
+                navigator.serviceWorker.controller
+              ) {
+                setServiceWorkerUpdated(true)
+                setServiceWorkerRegistration(registration)
               }
             }
           }
-        })
-        .catch((err) => {
-          console.error("SW registration failed:", err)
-        })
-
-      // Reload page when the new SW activates
-      let refreshing = false
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (!refreshing) {
-          refreshing = true
-          window.location.reload()
         }
       })
-    }
+      .catch((err) => {
+        console.error("SW registration failed:", err)
+      })
+
+    // Reload page when the new SW activates
+    let refreshing = false
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!refreshing) {
+        refreshing = true
+        window.location.reload()
+      }
+    })
   }, [])
 
   // Add swipe handlers to change days (only if not in Table Mode)
@@ -458,7 +488,7 @@ export function useSchedule() {
     trackMouse: false,
   })
 
-  // Possibly show “swipe hint” once if not in Table Mode
+  // Possibly show "swipe hint" once if not in Table Mode
   React.useEffect(() => {
     const hasSeenHint = localStorage.getItem("hasSeenSwipeHint")
     if (!hasSeenHint && !showSkeleton && timelineItems.length > 0 && !tableMode) {

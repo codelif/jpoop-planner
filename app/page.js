@@ -57,7 +57,7 @@ export default function Page() {
   const [showTimeline, setShowTimeline] = React.useState(true)
 
   React.useEffect(() => {
-    const currentVersion = 'jiit-planner-cache-v2025-07-20_04-20-27'
+    const currentVersion = 'jiit-planner-cache-v2025-07-20_04-56-46'
     const storedVersion = localStorage.getItem('app-version')
 
     if (!storedVersion || storedVersion !== currentVersion) {

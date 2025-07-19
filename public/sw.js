@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jiit-planner-cache-v2025-07-20_04-20-27';
+const CACHE_NAME = 'jiit-planner-cache-v2025-07-20_04-56-46';
 const urlsToCache = [
     '/',
     // Add other assets you want to cache
@@ -33,21 +33,32 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // Skip caching entirely for API calls
-    if (event.request.url.includes('/api/')) {
-        event.respondWith(fetch(event.request));
+    const url = new URL(event.request.url);
+    
+    // Skip caching entirely for API calls - be more explicit
+    if (url.pathname.startsWith('/api/')) {
+        console.log('SW: Bypassing cache for API call:', url.pathname);
+        event.respondWith(
+            fetch(event.request).catch((error) => {
+                console.error('SW: API fetch failed:', error);
+                throw error;
+            })
+        );
         return;
     }
 
+    // Handle non-API requests with caching
     event.respondWith(
         caches.match(event.request)
             .then((response) => {
                 // Return cached response if available
                 if (response) {
+                    console.log('SW: Serving from cache:', url.pathname);
                     return response;
                 }
                 
-                // Fetch from network
+                // Fetch from network and cache
+                console.log('SW: Fetching from network:', url.pathname);
                 return fetch(event.request).then(
                     (response) => {
                         // Only cache successful responses
@@ -60,11 +71,12 @@ self.addEventListener('fetch', (event) => {
                         caches.open(CACHE_NAME)
                             .then((cache) => {
                                 cache.put(event.request, responseToCache);
+                                console.log('SW: Cached:', url.pathname);
                             });
                         return response;
                     }
                 ).catch((error) => {
-                    console.error('Failed to fetch and cache:', error);
+                    console.error('SW: Network fetch failed:', error);
                     throw error;
                 });
             })
