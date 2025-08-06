@@ -137,7 +137,7 @@ export function useSchedule() {
         const freshData = await res.json()
 
         // If local is null or versions differ, update local
-        if (!localData || freshData.version !== localData.version) {
+        if (!localData || freshData.cacheVersion !== localData.cacheVersion) {
           setUpdateStatus("updating-metadata")
           setMetadata(freshData)
           localStorage.setItem("metadata", JSON.stringify(freshData))
