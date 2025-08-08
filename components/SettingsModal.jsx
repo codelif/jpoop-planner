@@ -7,16 +7,68 @@ import { X, Settings } from "lucide-react"
 import { useTheme } from "next-themes"
 import * as SwitchPrimitive from "@radix-ui/react-switch"
 
+// ——— Reusable bits ———
+function SettingSwitch({ id, label, checked, onChange }) {
+  return (
+    <div className="flex items-center justify-between mb-6">
+      <label className="text-sm font-medium" htmlFor={id}>
+        {label}
+      </label>
+      <SwitchPrimitive.Root
+        id={id}
+        checked={checked}
+        onCheckedChange={onChange}
+        className="
+          relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent
+          bg-input transition-colors
+          data-[state=checked]:bg-primary
+          focus:outline-none focus-visible:ring-2
+          focus-visible:ring-ring focus-visible:ring-offset-2
+        "
+      >
+        <SwitchPrimitive.Thumb
+          className="
+            pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform
+            data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0
+          "
+        />
+      </SwitchPrimitive.Root>
+    </div>
+  )
+}
+
+function ThemeButtons() {
+  const { theme, setTheme } = useTheme()
+  const options = ["light", "dark", "system"]
+
+  return (
+    <div className="mb-6 space-y-1">
+      <label className="text-sm font-medium block">Theme</label>
+      <div className="flex gap-2">
+        {options.map((opt) => (
+          <Button
+            key={opt}
+            variant={theme === opt ? "default" : "outline"}
+            onClick={() => setTheme(opt)}
+          >
+            {opt[0].toUpperCase() + opt.slice(1)}
+          </Button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ——— Main component ———
 export function SettingsModal({
   showTimeline,
   onToggleTimeline,
   tableMode,
   onToggleTableMode,
+  scrollSwitch,
+  onScrollSwitch,
 }) {
   const [open, setOpen] = React.useState(false)
-
-  // Dark Mode integration
-  const { theme, setTheme } = useTheme()
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -56,80 +108,27 @@ export function SettingsModal({
           </Dialog.Description>
 
           {/* THEME TOGGLE */}
-          <div className="mb-6 space-y-1">
-            <label className="text-sm font-medium block">Theme</label>
-            <div className="flex gap-2">
-              <Button
-                variant={theme === "light" ? "default" : "outline"}
-                onClick={() => setTheme("light")}
-              >
-                Light
-              </Button>
-              <Button
-                variant={theme === "dark" ? "default" : "outline"}
-                onClick={() => setTheme("dark")}
-              >
-                Dark
-              </Button>
-              <Button
-                variant={theme === "system" ? "default" : "outline"}
-                onClick={() => setTheme("system")}
-              >
-                System
-              </Button>
-            </div>
-          </div>
+          <ThemeButtons />
 
-          {/* SHOW TIMELINE SWITCH */}
-          <div className="flex items-center justify-between mb-6">
-            <label className="text-sm font-medium" htmlFor="timelineSwitch">
-              Show Timeline
-            </label>
-            <SwitchPrimitive.Root
-              id="timelineSwitch"
-              checked={showTimeline}
-              onCheckedChange={onToggleTimeline}
-              className="
-                relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent
-                bg-input transition-colors
-                data-[state=checked]:bg-primary
-                focus:outline-none focus-visible:ring-2
-                focus-visible:ring-ring focus-visible:ring-offset-2
-              "
-            >
-              <SwitchPrimitive.Thumb
-                className="
-                  pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform
-                  data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0
-                "
-              />
-            </SwitchPrimitive.Root>
-          </div>
-
-          <div className="flex items-center justify-between mb-6">
-            <label className="text-sm font-medium" htmlFor="tableModeSwitch">
-              Compact Mode (BETA)
-            </label>
-            <SwitchPrimitive.Root
-              id="tableModeSwitch"
-              checked={tableMode}
-              onCheckedChange={onToggleTableMode}
-              className="
-                relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent
-                bg-input transition-colors
-                data-[state=checked]:bg-primary
-                focus:outline-none focus-visible:ring-2
-                focus-visible:ring-ring focus-visible:ring-offset-2
-              "
-            >
-              <SwitchPrimitive.Thumb
-                className="
-                  pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform
-                  data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0
-                "
-              />
-            </SwitchPrimitive.Root>
-          </div>
+          {/* SWITCHES */}
+          <SettingSwitch
+            id="timelineSwitch"
+            label="Show Timeline"
+            checked={showTimeline}
+            onChange={onToggleTimeline}
+          />
+          <SettingSwitch
+            id="scrollSwitch"
+            label="Natural Scroll"
+            checked={scrollSwitch}
+            onChange={onScrollSwitch}
+          />
+          <SettingSwitch
+            id="tableModeSwitch"
+            label="Compact Mode (BETA)"
+            checked={tableMode}
+            onChange={onToggleTableMode}
+          />
 
           {/* Close Button (X) */}
           <Dialog.Close asChild>

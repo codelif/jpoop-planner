@@ -467,26 +467,73 @@ export function useSchedule() {
     })
   }, [])
 
+  const changeDay = (direction) => {
+  const currentIndex = daysOfWeek.indexOf(day)
+  const newIndex = (currentIndex + direction + daysOfWeek.length) % daysOfWeek.length
+  setSlideDirection(direction)
+  setDay(daysOfWeek[newIndex])
+}
+
   // Add swipe handlers to change days (only if not in Table Mode)
   const [slideDirection, setSlideDirection] = React.useState(0)
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => {
-      if (tableMode) return // disable day-swipe in table mode
-      const currentIndex = daysOfWeek.indexOf(day)
-      const nextIndex = (currentIndex + 1) % daysOfWeek.length
-      setSlideDirection(1)
-      setDay(daysOfWeek[nextIndex])
-    },
-    onSwipedRight: () => {
-      if (tableMode) return // disable day-swipe in table mode
-      const currentIndex = daysOfWeek.indexOf(day)
-      const prevIndex = (currentIndex - 1 + daysOfWeek.length) % daysOfWeek.length
-      setSlideDirection(-1)
-      setDay(daysOfWeek[prevIndex])
-    },
-    preventDefaultTouchmoveEvent: true,
-    trackMouse: false,
-  })
+  onSwipedLeft: () => {
+    if (tableMode) return
+    changeDay(1)
+  },
+  onSwipedRight: () => {
+    if (tableMode) return
+    changeDay(-1)
+  },
+  preventDefaultTouchmoveEvent: true,
+  trackMouse: false,
+})
+
+React.useEffect(() => {
+  if (tableMode) return
+
+  const handleKeyDown = (e) => {
+    if (e.key === "ArrowLeft") {
+      changeDay(-1)
+    } else if (e.key === "ArrowRight") {
+      changeDay(1)
+    }
+  }
+
+  window.addEventListener("keydown", handleKeyDown)
+  return () => window.removeEventListener("keydown", handleKeyDown)
+}, [day, tableMode])
+
+React.useEffect(() => {
+  if (tableMode) return;
+  let lastSwipeTime = 0;
+  const MIN_SWIPE_DISTANCE = 50;
+  const SWIPE_COOLDOWN_MS = 500;
+
+  const handleWheel = (e) => {
+    const now = Date.now();
+    if (now - lastSwipeTime < SWIPE_COOLDOWN_MS) return;
+
+    const absX = Math.abs(e.deltaX);
+    if (absX > Math.abs(e.deltaY) && absX > MIN_SWIPE_DISTANCE) {
+      lastSwipeTime = now;
+
+      const flip = localStorage.getItem("scrollSwitch") === "true";
+      const base = e.deltaX > 0 ? 1 : -1;
+      const direction = flip ? -base : base; 
+
+      setSlideDirection(direction);
+      setDay(prevDay => {
+        const currentIndex = daysOfWeek.indexOf(prevDay);
+        const nextIndex = (currentIndex + direction + daysOfWeek.length) % daysOfWeek.length;
+        return daysOfWeek[nextIndex];
+      });
+    }
+  };
+
+  window.addEventListener("wheel", handleWheel, { passive: true });
+  return () => window.removeEventListener("wheel", handleWheel);
+}, [tableMode]);
 
   // Possibly show "swipe hint" once if not in Table Mode
   React.useEffect(() => {
