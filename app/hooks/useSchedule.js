@@ -505,7 +505,7 @@ React.useEffect(() => {
 }, [day, tableMode])
 
 React.useEffect(() => {
-  if (tableMode) return;   
+  if (tableMode) return;
   let lastSwipeTime = 0;
   const MIN_SWIPE_DISTANCE = 50;
   const SWIPE_COOLDOWN_MS = 500;
@@ -514,12 +514,15 @@ React.useEffect(() => {
     const now = Date.now();
     if (now - lastSwipeTime < SWIPE_COOLDOWN_MS) return;
 
-    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) &&
-        Math.abs(e.deltaX) > MIN_SWIPE_DISTANCE) {
+    const absX = Math.abs(e.deltaX);
+    if (absX > Math.abs(e.deltaY) && absX > MIN_SWIPE_DISTANCE) {
       lastSwipeTime = now;
-      const direction = e.deltaX > 0 ? 1 : -1;
+
+      const flip = localStorage.getItem("scrollSwitch") === "true";
+      const base = e.deltaX > 0 ? 1 : -1;
+      const direction = flip ? -base : base; 
+
       setSlideDirection(direction);
-      // use functional update so we don’t close over stale `day`
       setDay(prevDay => {
         const currentIndex = daysOfWeek.indexOf(prevDay);
         const nextIndex = (currentIndex + direction + daysOfWeek.length) % daysOfWeek.length;
@@ -529,9 +532,7 @@ React.useEffect(() => {
   };
 
   window.addEventListener("wheel", handleWheel, { passive: true });
-  return () => {
-    window.removeEventListener("wheel", handleWheel);
-  };
+  return () => window.removeEventListener("wheel", handleWheel);
 }, [tableMode]);
 
   // Possibly show "swipe hint" once if not in Table Mode

@@ -55,6 +55,7 @@ export default function Page() {
   } = useSchedule()
 
   const [showTimeline, setShowTimeline] = React.useState(true)
+  const [scrollSwitch, setNaturalScroll] = React.useState(true);
 
   React.useEffect(() => {
     const currentVersion = 'jiit-planner-cache-v2025-08-06_21-30-34'
@@ -79,12 +80,27 @@ export default function Page() {
     localStorage.setItem("showTimeline", newVal ? "true" : "false")
   }
 
+  React.useEffect(() => {
+    const stored = localStorage.getItem("scrollSwitch")
+    if (stored === "false") {
+      setNaturalScroll(false)
+    }
+  }, [])
+
+  function handleToggleScroll(newVal) {
+    setNaturalScroll(newVal)
+    localStorage.setItem("scrollSwitch", newVal ? "true" : "false")
+  }
+
+
   // If we are in tableMode, show the new table-based schedule
   if (tableMode) {
     return (
       <div className="min-h-screen flex flex-col overflow-x-hidden" {...swipeHandlers}>
         <Navbar
           showTimeline={showTimeline}
+          scrollSwitch= {scrollSwitch}
+          onScrollSwitch= {handleToggleScroll}
           onToggleTimeline={handleToggleTimeline}
           tableMode={tableMode}
           onToggleTableMode={handleToggleTableMode}
@@ -136,7 +152,9 @@ export default function Page() {
     <div className="min-h-screen flex flex-col" {...swipeHandlers}>
       <Navbar
         showTimeline={showTimeline}
+        scrollSwitch= {scrollSwitch}
         onToggleTimeline={handleToggleTimeline}
+        onScrollSwitch= {handleToggleScroll}
         tableMode={tableMode}
         onToggleTableMode={handleToggleTableMode}
       />
@@ -211,7 +229,8 @@ export default function Page() {
 
         {!showSkeleton && timelineItems.length > 0 && (
           <div className="text-xs text-center text-muted-foreground mt-2 absolute bottom-4 left-0 right-0">
-            Swipe left/right to change days
+             <span className="block md:hidden">Swipe left/right to change days</span>
+             <span className="hidden md:block">Use arrow keys/double-finger swipe to change days</span>
           </div>
         )}
       </main>
