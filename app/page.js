@@ -61,7 +61,7 @@ export default function Page() {
   const [scrollSwitch, setNaturalScroll] = React.useState(true);
 
   React.useEffect(() => {
-    const currentVersion = 'jiit-planner-cache-v2025-08-06_21-30-34'
+    const currentVersion = 'jiit-planner-cache-v2025-08-10_00-57-55'
     const storedVersion = localStorage.getItem('app-version')
 
     if (!storedVersion || storedVersion !== currentVersion) {
