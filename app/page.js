@@ -250,7 +250,7 @@ export default function Page() {
                   </div>
                   {showBreaks && (
                     <div className="w-80 hidden md:block">
-                      <div className="sticky top-4">
+                      <div className="sticky top-20">
                         <BreaksSection breaks={breaks} />
                       </div>
                     </div>
