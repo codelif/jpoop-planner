@@ -39,6 +39,7 @@ export function useSchedule() {
   // Classes data
   const [timelineItems, setTimelineItems] = React.useState([])
   const [uniqueTimes, setUniqueTimes] = React.useState([])
+  const [breaks, setBreaks] = React.useState([])
   // Store the entire week's classes so we can display in Table Mode
   const [allDaysClasses, setAllDaysClasses] = React.useState({})
 
@@ -323,6 +324,31 @@ export function useSchedule() {
     unique.sort((a, b) => timeToMinutes(a) - timeToMinutes(b))
     setUniqueTimes(unique)
     cardRefs.current = classesForDay.map(() => React.createRef())
+
+    const sorted = [...classesForDay].sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start))
+    const gaps = []
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const currentEndMin = timeToMinutes(sorted[i].end)
+      const nextStartMin = timeToMinutes(sorted[i + 1].start)
+      if (nextStartMin > currentEndMin) {
+        const durationMin = nextStartMin - currentEndMin
+        if (durationMin >= 60) {
+          const hr = Math.floor(durationMin / 60)
+          const min = durationMin % 60
+          const durationReadable = [
+            hr ? `${hr} hr${hr > 1 ? 's' : ''}` : null,
+            min ? `${min} min` : null,
+          ].filter(Boolean).join(' ')
+          gaps.push({
+            start: sorted[i].end,
+            end: sorted[i + 1].start,
+            durationMinutes: durationMin,
+            durationReadable: durationReadable || '0 min'
+          })
+        }
+      }
+    }
+    setBreaks(gaps)
   }
 
   // Highlight the active card (if current time in range)
@@ -583,5 +609,6 @@ React.useEffect(() => {
     tableMode,
     handleToggleTableMode,
     allDaysClasses,
+  breaks,
   }
 }
