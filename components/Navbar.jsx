@@ -8,7 +8,9 @@ export function Navbar({
   tableMode,
   onToggleTableMode,
   scrollSwitch,
-  onScrollSwitch
+  onScrollSwitch,
+  showBreaks,
+  onToggleBreaks
 }) {
   return (
     <header className="border-b bg-background sticky top-0 z-50">
@@ -33,6 +35,8 @@ export function Navbar({
             onToggleTimeline={onToggleTimeline}
             scrollSwitch={scrollSwitch}
             onScrollSwitch={onScrollSwitch}
+            showBreaks={showBreaks}
+            onToggleBreaks={onToggleBreaks}
             tableMode={tableMode}
             onToggleTableMode={onToggleTableMode}
           />

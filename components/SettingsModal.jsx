@@ -67,6 +67,8 @@ export function SettingsModal({
   onToggleTableMode,
   scrollSwitch,
   onScrollSwitch,
+  showBreaks,
+  onToggleBreaks,
 }) {
   const [open, setOpen] = React.useState(false)
 
@@ -116,6 +118,12 @@ export function SettingsModal({
             label="Show Timeline"
             checked={showTimeline}
             onChange={onToggleTimeline}
+          />
+          <SettingSwitch
+            id="breaksSwitch"
+            label="Show Breaks"
+            checked={showBreaks}
+            onChange={onToggleBreaks}
           />
           <SettingSwitch
             id="scrollSwitch"

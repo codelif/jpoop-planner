@@ -7,6 +7,7 @@ import { Navbar } from "@/components/Navbar"
 import { Footer } from "@/components/Footer"
 import { Timeline } from "@/components/Timeline"
 import { ScheduleCard } from "@/components/ScheduleCard"
+import { BreaksSection } from "@/components/BreaksSection"
 import { SwipeHint } from "@/components/SwipeHint"
 import { UpdateIndicator } from "@/components/UpdateIndicator"
 import { ScheduleFilters } from "@/components/ScheduleFilters"
@@ -52,9 +53,11 @@ export default function Page() {
     tableMode,
     handleToggleTableMode,
     allDaysClasses,
+  breaks,
   } = useSchedule()
 
   const [showTimeline, setShowTimeline] = React.useState(true)
+  const [showBreaks, setShowBreaks] = React.useState(true)
   const [scrollSwitch, setNaturalScroll] = React.useState(true);
 
   React.useEffect(() => {
@@ -81,6 +84,18 @@ export default function Page() {
   }
 
   React.useEffect(() => {
+    const stored = localStorage.getItem("showBreaks")
+    if (stored === "false") {
+      setShowBreaks(false)
+    }
+  }, [])
+
+  function handleToggleBreaks(newVal) {
+    setShowBreaks(newVal)
+    localStorage.setItem("showBreaks", newVal ? "true" : "false")
+  }
+
+  React.useEffect(() => {
     const stored = localStorage.getItem("scrollSwitch")
     if (stored === "false") {
       setNaturalScroll(false)
@@ -102,6 +117,8 @@ export default function Page() {
           scrollSwitch= {scrollSwitch}
           onScrollSwitch= {handleToggleScroll}
           onToggleTimeline={handleToggleTimeline}
+          showBreaks={showBreaks}
+          onToggleBreaks={handleToggleBreaks}
           tableMode={tableMode}
           onToggleTableMode={handleToggleTableMode}
         />
@@ -155,6 +172,8 @@ export default function Page() {
         scrollSwitch= {scrollSwitch}
         onToggleTimeline={handleToggleTimeline}
         onScrollSwitch= {handleToggleScroll}
+        showBreaks={showBreaks}
+        onToggleBreaks={handleToggleBreaks}
         tableMode={tableMode}
         onToggleTableMode={handleToggleTableMode}
       />
@@ -202,25 +221,40 @@ export default function Page() {
               ) : timelineItems.length === 0 ? (
                 <NoScheduleResults text={noScheduleResultsText} />
               ) : (
-                <div className="relative flex gap-16">
-                  {showTimeline && (
-                    <Timeline
-                      timelineItems={timelineItems}
-                      uniqueTimes={uniqueTimes}
-                      cardRefs={cardRefs.current}
-                    />
-                  )}
-
-                  <div className="flex-1 space-y-10 text-foreground transition-all">
-                    {timelineItems.map((item, index) => {
-                      const timeActive = isCardTimeActive(item)
-                      return (
-                        <div key={index} ref={cardRefs.current[index]}>
-                          <ScheduleCard item={item} timeActive={timeActive} />
-                        </div>
-                      )
-                    })}
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    {showBreaks && (
+                      <div className="md:hidden mb-8">
+                        <BreaksSection breaks={breaks} />
+                      </div>
+                    )}
+                    <div className="relative flex gap-16">
+                      {showTimeline && (
+                        <Timeline
+                          timelineItems={timelineItems}
+                          uniqueTimes={uniqueTimes}
+                          cardRefs={cardRefs.current}
+                        />
+                      )}
+                      <div className="flex-1 space-y-10 text-foreground transition-all">
+                        {timelineItems.map((item, index) => {
+                          const timeActive = isCardTimeActive(item)
+                          return (
+                            <div key={index} ref={cardRefs.current[index]}>
+                              <ScheduleCard item={item} timeActive={timeActive} />
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
+                  {showBreaks && (
+                    <div className="w-80 hidden md:block">
+                      <div className="sticky top-4">
+                        <BreaksSection breaks={breaks} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>
