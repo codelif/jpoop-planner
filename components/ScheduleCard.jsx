@@ -22,7 +22,7 @@ export const getTypeBadge = (type) => {
 export function ScheduleCard({ item, timeActive }) {
   let borderClasses = "border border-border"
   if (timeActive) {
-    borderClasses = "border-4 border-foreground"
+    borderClasses = "border-4 border-primary"
   }
 
 
@@ -30,7 +30,8 @@ export function ScheduleCard({ item, timeActive }) {
 
   return (
     <div
-      className={`relative p-4 rounded-md bg-card ${borderClasses} shadow-sm hover:scale-[1.01] transition-transform duration-300 ease-in-out`}
+      className={`relative p-4 rounded-xl bg-card ${borderClasses} shadow-lg hover:scale-[1.01] transition-transform duration-300 ease-in-out`}
+
       style={{ wordBreak: 'break-word' }}
     >
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
@@ -44,16 +45,16 @@ export function ScheduleCard({ item, timeActive }) {
       <div className="h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent mb-4" />
 
       <div className="flex flex-wrap gap-3">
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-muted/50 text-sm text-foreground">
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-accent text-sm text-accent-foreground">
           {icon} {label}
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-muted/50 text-sm text-foreground">
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-accent text-sm text-accent-foreground">
           <User className="h-4 w-4" /> {item.teacher}
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-muted/50 text-sm text-foreground">
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-accent text-sm text-accent-foreground">
           <Users className="h-4 w-4" /> {item.batches.join(", ")}
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-muted/50 text-sm text-foreground">
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-accent text-sm text-accent-foreground">
           <MapPin className="h-4 w-4" /> {item.venue}
         </div>
       </div>

@@ -21,7 +21,7 @@ export function Timeline({ timelineItems, uniqueTimes, cardRefs }) {
     <div className="relative" style={{ minWidth: '40px' }}>
       <div
         ref={lineRef}
-        className="relative w-[2px] bg-gray-300 dark:bg-gray-600 mx-auto transition-all"
+        className="relative w-[2px] bg-border mx-auto transition-all"
         style={{ height: lineHeight }}
       >
         {/* The animated dot */}
