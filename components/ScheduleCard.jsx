@@ -31,6 +31,7 @@ export function ScheduleCard({ item, timeActive }) {
   return (
     <div
       className={`relative p-4 rounded-xl bg-card ${borderClasses} shadow-lg hover:scale-[1.01] transition-transform duration-300 ease-in-out`}
+
       style={{ wordBreak: 'break-word' }}
     >
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
