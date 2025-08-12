@@ -48,7 +48,7 @@ export function ScheduleTableView({ allDaysClasses }) {
       <div
         key={i}
         onClick={() => openModal(cls)}
-        className="inline-block cursor-pointer mb-1 last:mb-0 bg-neutral-900/80 border border-neutral-800/80 rounded px-2 py-1 text-[10px] font-semibold hover:bg-neutral-800 transition-colors break-words max-w-[150px] leading-tight"
+        className="inline-block cursor-pointer mb-1 last:mb-0 bg-card border border-border rounded px-2 py-1 text-[10px] font-semibold hover:bg-muted transition-colors break-words max-w-[150px] leading-tight text-card-foreground"
         style={{ letterSpacing: '-0.25px' }}
       >
         {cls.subject}
