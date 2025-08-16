@@ -48,9 +48,9 @@ function calculateBreaks(classes) {
 
 function findCoincidingBreaks(allBatchBreaks) {
   if (allBatchBreaks.length < 2) return []
-  
+
   const coinciding = []
-  
+
   const allTimeRanges = []
   allBatchBreaks.forEach((breaks, batchIndex) => {
     breaks.forEach(brk => {
@@ -59,10 +59,10 @@ function findCoincidingBreaks(allBatchBreaks) {
       allTimeRanges.push({ start, end, batchIndex })
     })
   })
-  
+
   allTimeRanges.forEach((range, index) => {
     const overlaps = []
-    
+
     for (let batchIndex = 0; batchIndex < allBatchBreaks.length; batchIndex++) {
       const batchBreaks = allBatchBreaks[batchIndex]
       const hasOverlap = batchBreaks.some(brk => {
@@ -70,9 +70,9 @@ function findCoincidingBreaks(allBatchBreaks) {
         const brkEnd = timeToMinutes(brk.end)
         return (range.start < brkEnd && brkStart < range.end)
       })
-      
+
       if (hasOverlap) {
-        // Find the actual overlap period
+
         const batchOverlaps = batchBreaks
           .filter(brk => {
             const brkStart = timeToMinutes(brk.start)
@@ -83,20 +83,19 @@ function findCoincidingBreaks(allBatchBreaks) {
             start: Math.max(range.start, timeToMinutes(brk.start)),
             end: Math.min(range.end, timeToMinutes(brk.end))
           }))
-        
+
         overlaps.push(...batchOverlaps)
       }
     }
-    
-    // If we have overlaps from all batches, find the common intersection
+
     if (overlaps.length >= allBatchBreaks.length) {
       const commonStart = Math.max(...overlaps.map(o => o.start))
       const commonEnd = Math.min(...overlaps.map(o => o.end))
-      
+
       if (commonStart < commonEnd) {
         const duration = commonEnd - commonStart
-        
-        if (duration >= 60) { // At least 1 hour
+
+        if (duration >= 60) { 
           const formatTime = (minutes) => {
             const hour = Math.floor(minutes / 60)
             const min = minutes % 60
@@ -104,26 +103,25 @@ function findCoincidingBreaks(allBatchBreaks) {
             const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour
             return `${displayHour}:${min.toString().padStart(2, '0')} ${period}`
           }
-          
+
           const hr = Math.floor(duration / 60)
           const min = duration % 60
           const durationReadable = [
             hr ? `${hr} hr${hr > 1 ? 's' : ''}` : null,
             min ? `${min} min` : null,
           ].filter(Boolean).join(' ')
-          
+
           const newBreak = {
             start: formatTime(commonStart),
             end: formatTime(commonEnd),
             durationMinutes: duration,
             durationReadable: durationReadable || '0 min'
           }
-          
-          // Avoid duplicates
+
           const exists = coinciding.some(existing => 
             existing.start === newBreak.start && existing.end === newBreak.end
           )
-          
+
           if (!exists) {
             coinciding.push(newBreak)
           }
@@ -131,7 +129,7 @@ function findCoincidingBreaks(allBatchBreaks) {
       }
     }
   })
-  
+
   return coinciding.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start))
 }
 
@@ -182,7 +180,7 @@ function BatchSelector({
           </Button>
         )}
       </div>
-      
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-sm font-medium text-muted-foreground">Course</label>
@@ -293,13 +291,13 @@ function DayComparisonView({ day, batchesData, batchLabels }) {
       }`}>
         {batchesData.map((data, index) => {
           const classes = data[day] || []
-          
+
           return (
             <div key={index} className="space-y-4">
               <h4 className="text-lg font-semibold text-card-foreground bg-accent/20 p-3 rounded-lg">
                 {batchLabels[index]}
               </h4>
-              
+
               <div className="space-y-3">
                 <h5 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Classes</h5>
                 {classes.length === 0 ? (
@@ -325,16 +323,14 @@ function DayComparisonView({ day, batchesData, batchLabels }) {
 }
 
 export function TimetableComparison({ metadata, onClose }) {
-  // Multi-batch state
+
   const [batches, setBatches] = React.useState([
     { course: "", semester: "", phase: "", batch: "", data: {}, loading: false },
     { course: "", semester: "", phase: "", batch: "", data: {}, loading: false }
   ])
 
-  // UI state
   const [selectedDay, setSelectedDay] = React.useState("Monday")
 
-  // Initialize first batch with current saved values
   React.useEffect(() => {
     const savedCourse = localStorage.getItem("selectedCourse")
     const savedSemester = localStorage.getItem("selectedSemester")
@@ -353,21 +349,18 @@ export function TimetableComparison({ metadata, onClose }) {
     }
   }, [])
 
-  // Prevent background scrolling when modal is open
   React.useEffect(() => {
-    // Save the original overflow and position styles
+
     const originalOverflow = document.body.style.overflow
     const originalPosition = document.body.style.position
     const originalTop = document.body.style.top
     const scrollY = window.scrollY
-    
-    // Prevent scrolling on mount
+
     document.body.style.overflow = 'hidden'
     document.body.style.position = 'fixed'
     document.body.style.top = `-${scrollY}px`
     document.body.style.width = '100%'
-    
-    // Re-enable scrolling when component unmounts
+
     return () => {
       document.body.style.overflow = originalOverflow
       document.body.style.position = originalPosition
@@ -377,7 +370,6 @@ export function TimetableComparison({ metadata, onClose }) {
     }
   }, [])
 
-  // Add a new batch
   const addBatch = () => {
     setBatches(prevBatches => [
       ...prevBatches,
@@ -385,19 +377,16 @@ export function TimetableComparison({ metadata, onClose }) {
     ])
   }
 
-  // Remove a batch (minimum 2 batches required)
   const removeBatch = (index) => {
     if (batches.length <= 2) return
     setBatches(prevBatches => prevBatches.filter((_, i) => i !== index))
   }
 
-  // Update a specific batch field
   const updateBatch = (index, field, value) => {
     setBatches(prevBatches => {
       const newBatches = [...prevBatches]
       newBatches[index] = { ...newBatches[index], [field]: value }
-      
-      // Reset dependent fields when parent field changes
+
       if (field === 'course') {
         newBatches[index].semester = ""
         newBatches[index].phase = ""
@@ -411,12 +400,11 @@ export function TimetableComparison({ metadata, onClose }) {
         newBatches[index].batch = ""
         newBatches[index].data = {}
       }
-      
+
       return newBatches
     })
   }
 
-  // Set loading state for a specific batch
   const setBatchLoading = (index, loading) => {
     setBatches(prevBatches => {
       const newBatches = [...prevBatches]
@@ -425,7 +413,6 @@ export function TimetableComparison({ metadata, onClose }) {
     })
   }
 
-  // Set data for a specific batch
   const setBatchData = (index, data) => {
     setBatches(prevBatches => {
       const newBatches = [...prevBatches]
@@ -434,11 +421,10 @@ export function TimetableComparison({ metadata, onClose }) {
     })
   }
 
-  // Fetch data when batch configuration changes
   React.useEffect(() => {
     batches.forEach(async (batch, index) => {
       const { course, semester, phase, batch: batchId } = batch
-      
+
       if (!course || !semester || !phase || !batchId) {
         setBatchData(index, {})
         return
@@ -464,11 +450,10 @@ export function TimetableComparison({ metadata, onClose }) {
     const courseCode = course?.replace('btech-', 'B.Tech ')
     const semesterNum = semester?.replace('sem', '')
     const phaseNum = phase?.replace('phase', '')
-    
+
     return `${courseCode} - ${semesterNum} - ${phaseNum} - ${batchData?.name || batch}`
   }
 
-  // Check if comparison is possible (at least 2 batches with complete data)
   const validBatches = batches.filter(batch => 
     batch.course && batch.semester && batch.phase && batch.batch && 
     Object.keys(batch.data).length > 0
@@ -513,7 +498,7 @@ export function TimetableComparison({ metadata, onClose }) {
                   Add Batch
                 </Button>
               </div>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {batches.map((batch, index) => (
                   <BatchSelector
