@@ -10,7 +10,8 @@ export function Navbar({
   scrollSwitch,
   onScrollSwitch,
   showBreaks,
-  onToggleBreaks
+  onToggleBreaks,
+  onOpenComparison
 }) {
   return (
     <header className="border-b bg-background sticky top-0 z-50">
@@ -39,6 +40,7 @@ export function Navbar({
             onToggleBreaks={onToggleBreaks}
             tableMode={tableMode}
             onToggleTableMode={onToggleTableMode}
+            onOpenComparison={onOpenComparison}
           />
         </div>
       </div>
