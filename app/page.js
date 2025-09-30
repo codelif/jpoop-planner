@@ -13,6 +13,7 @@ import { UpdateIndicator } from "@/components/UpdateIndicator"
 import { ScheduleFilters } from "@/components/ScheduleFilters"
 import { ScheduleSkeleton } from "@/components/ScheduleSkeleton"
 import { NoScheduleResults } from "@/components/NoScheduleResults"
+import { TimetableComparison } from "@/components/TimetableComparison"
 import { slideVariants } from "@/app/lib/motion"
 
 // NEW: Import TableView
@@ -53,12 +54,14 @@ export default function Page() {
     tableMode,
     handleToggleTableMode,
     allDaysClasses,
-  breaks,
+    breaks,
+    metadata,
   } = useSchedule()
 
   const [showTimeline, setShowTimeline] = React.useState(true)
   const [showBreaks, setShowBreaks] = React.useState(true)
-  const [scrollSwitch, setNaturalScroll] = React.useState(true);
+  const [scrollSwitch, setNaturalScroll] = React.useState(true)
+  const [showComparison, setShowComparison] = React.useState(false)
 
   React.useEffect(() => {
     const currentVersion = 'jiit-planner-cache-v2025-08-10_00-57-55'
@@ -121,6 +124,7 @@ export default function Page() {
           onToggleBreaks={handleToggleBreaks}
           tableMode={tableMode}
           onToggleTableMode={handleToggleTableMode}
+          onOpenComparison={() => setShowComparison(true)}
         />
 
         <UpdateIndicator status={updateStatus} />
@@ -160,6 +164,14 @@ export default function Page() {
         </main>
 
         <Footer />
+
+        {/* Timetable Comparison Modal */}
+        {showComparison && metadata && (
+          <TimetableComparison 
+            metadata={metadata} 
+            onClose={() => setShowComparison(false)} 
+          />
+        )}
       </div>
     )
   }
@@ -176,6 +188,7 @@ export default function Page() {
         onToggleBreaks={handleToggleBreaks}
         tableMode={tableMode}
         onToggleTableMode={handleToggleTableMode}
+        onOpenComparison={() => setShowComparison(true)}
       />
 
       <UpdateIndicator status={updateStatus} />
@@ -271,6 +284,14 @@ export default function Page() {
 
       {showSwipeHint && <SwipeHint onDismiss={dismissHint} />}
       <Footer />
+
+      {/* Timetable Comparison Modal */}
+      {showComparison && metadata && (
+        <TimetableComparison 
+          metadata={metadata} 
+          onClose={() => setShowComparison(false)} 
+        />
+      )}
     </div>
   )
 }

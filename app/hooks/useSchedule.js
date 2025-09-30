@@ -609,6 +609,7 @@ React.useEffect(() => {
     tableMode,
     handleToggleTableMode,
     allDaysClasses,
-  breaks,
+    breaks,
+    metadata,
   }
 }

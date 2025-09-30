@@ -24,13 +24,11 @@ export function Timeline({ timelineItems, uniqueTimes, cardRefs }) {
         className="relative w-[2px] bg-border mx-auto transition-all"
         style={{ height: lineHeight }}
       >
-        {/* The animated dot */}
         <div
           className="absolute w-4 h-4 rounded-full bg-primary shadow"
           style={{ left: '50%', transform: 'translateX(-50%)', top: dotPosition }}
         ></div>
 
-        {/* Time markers along the line */}
         {uniqueTimes.map((t) => {
           const pos = positions[t]
           if (pos == null) return null

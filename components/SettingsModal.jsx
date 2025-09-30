@@ -3,7 +3,7 @@
 import React from "react"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Button } from "@/components/ui/button"
-import { X, Settings } from "lucide-react"
+import { X, Settings, ArrowLeftRight } from "lucide-react"
 import { useTheme } from "next-themes"
 import * as SwitchPrimitive from "@radix-ui/react-switch"
 
@@ -69,6 +69,7 @@ export function SettingsModal({
   onScrollSwitch,
   showBreaks,
   onToggleBreaks,
+  onOpenComparison,
 }) {
   const [open, setOpen] = React.useState(false)
 
@@ -111,6 +112,22 @@ export function SettingsModal({
 
           {/* THEME TOGGLE */}
           <ThemeButtons />
+
+          {/* TIMETABLE COMPARISON BUTTON */}
+          <div className="mb-6">
+            <label className="text-sm font-medium block mb-2">Tools</label>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setOpen(false)
+                onOpenComparison?.()
+              }}
+              className="w-full justify-start"
+            >
+              <ArrowLeftRight className="h-4 w-4 mr-2" />
+              Compare Timetables
+            </Button>
+          </div>
 
           {/* SWITCHES */}
           <SettingSwitch
