@@ -21,21 +21,38 @@ export function ElectiveSelectorModal({
   onSelect,
   electiveNamesByCode = {},
 }) {
-  // 1) Always call hooks in the same order — no early return before hooks.
+  // ---- stable hooks order (no early return before hooks) ----
   const categories = React.useMemo(() => {
     const list = Object.keys(electivesByCategory || {});
     list.sort((a, b) => a.localeCompare(b));
     return list;
   }, [electivesByCategory]);
 
+  const hasCategories = categories.length > 0;
+
   const [activeCategory, setActiveCategory] = React.useState("");
   const [query, setQuery] = React.useState("");
 
   const lastActiveRef = React.useRef("");
-  const touchRef = React.useRef({ x: 0, y: 0, t: 0 });
+  const contentRef = React.useRef(null);
 
-  // Derivations that must exist even if categories is empty
-  const hasCategories = categories.length > 0;
+  // --- swipe / drag refs & state (1:1 drag) ---
+  const widthRef = React.useRef(360);
+  const pointerRef = React.useRef({
+    id: null,
+    started: false,
+    mode: null, // null | "h" | "v"
+    startX: 0,
+    startY: 0,
+    lastX: 0,
+    lastY: 0,
+    startT: 0,
+    dx: 0,
+  });
+
+  const [dragX, setDragX] = React.useState(0); // px
+  const [snap, setSnap] = React.useState(false); // enables CSS transition only when snapping
+
   const safeActiveIndex = React.useMemo(() => {
     if (!hasCategories) return 0;
     const idx = categories.indexOf(activeCategory);
@@ -76,13 +93,36 @@ export function ElectiveSelectorModal({
     });
   }, [hasCategories, allOptionsForActive, query, electiveNamesByCode]);
 
-  // When opened, initialize category + reset search
+  // measure width for swipe threshold/clamp
+  React.useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      widthRef.current = Math.max(280, Math.floor(rect.width));
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("orientationchange", measure);
+    };
+  }, []);
+
+  // When opened, init active category & reset search
   React.useEffect(() => {
     if (!open) return;
 
     if (!hasCategories) {
       setActiveCategory("");
       setQuery("");
+      setDragX(0);
+      setSnap(false);
       return;
     }
 
@@ -93,9 +133,11 @@ export function ElectiveSelectorModal({
 
     setActiveCategory(initial);
     setQuery("");
+    setDragX(0);
+    setSnap(false);
   }, [open, hasCategories, categories]);
 
-  // Persist last active category when closing (in-session nicety)
+  // remember last active category
   React.useEffect(() => {
     if (!open && activeCategory) {
       lastActiveRef.current = activeCategory;
@@ -104,8 +146,7 @@ export function ElectiveSelectorModal({
 
   const normalizeLabel = (code) => {
     if (code === ELECTIVE_NONE) return "None";
-    const name = electiveNamesByCode?.[code];
-    return name ? name : code;
+    return electiveNamesByCode?.[code] ? electiveNamesByCode[code] : code;
   };
 
   const normalizeSecondary = (code) => {
@@ -133,25 +174,132 @@ export function ElectiveSelectorModal({
     for (const cat of categories) setValue(cat, ELECTIVE_NONE);
   };
 
-  const onTouchStart = (e) => {
-    const t = e.touches?.[0];
-    if (!t) return;
-    touchRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
+  // --------- 1:1 swipe mechanics (pointer events) ----------
+  const clampDrag = (dx) => {
+    const w = widthRef.current || 360;
+    // rubber-band clamp: allow ~30% of width max to keep it feeling tight
+    const max = Math.floor(w * 0.32);
+    if (dx > max) return max + (dx - max) * 0.15;
+    if (dx < -max) return -max + (dx + max) * 0.15;
+    return dx;
   };
 
-  const onTouchEnd = (e) => {
-    if (!hasCategories) return;
-    const t = e.changedTouches?.[0];
-    if (!t) return;
+  const beginPointer = (e) => {
+    // only for primary pointer
+    if (pointerRef.current.id != null) return;
 
-    const dx = t.clientX - touchRef.current.x;
-    const dy = t.clientY - touchRef.current.y;
-    const dt = Date.now() - touchRef.current.t;
+    pointerRef.current.id = e.pointerId;
+    pointerRef.current.started = true;
+    pointerRef.current.mode = null;
+    pointerRef.current.startX = e.clientX;
+    pointerRef.current.startY = e.clientY;
+    pointerRef.current.lastX = e.clientX;
+    pointerRef.current.lastY = e.clientY;
+    pointerRef.current.startT = Date.now();
+    pointerRef.current.dx = 0;
 
-    if (dt < 500 && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      if (dx < 0) goNext();
-      else goPrev();
+    setSnap(false);
+    // capture so we keep getting events even if finger leaves element
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  const movePointer = (e) => {
+    if (pointerRef.current.id !== e.pointerId) return;
+
+    const pr = pointerRef.current;
+    const dx = e.clientX - pr.startX;
+    const dy = e.clientY - pr.startY;
+
+    pr.lastX = e.clientX;
+    pr.lastY = e.clientY;
+    pr.dx = dx;
+
+    // decide gesture direction once
+    if (!pr.mode) {
+      const ax = Math.abs(dx);
+      const ay = Math.abs(dy);
+
+      // don’t steal vertical scroll unless clearly horizontal
+      if (ax < 8 && ay < 8) return;
+
+      if (ax > ay * 1.2) pr.mode = "h";
+      else pr.mode = "v";
     }
+
+    if (pr.mode === "h") {
+      // prevent horizontal page swipe/back gestures / native scroll
+      if (e.cancelable) e.preventDefault();
+      setDragX(clampDrag(dx)); // 1:1 (with slight rubber-band at extremes)
+    }
+  };
+
+  const endPointer = (e) => {
+    if (pointerRef.current.id !== e.pointerId) return;
+
+    const pr = pointerRef.current;
+    const w = widthRef.current || 360;
+    const dt = Math.max(1, Date.now() - pr.startT);
+    const dx = pr.dx;
+    const vx = dx / dt; // px/ms
+
+    // reset pointer
+    pointerRef.current.id = null;
+    pointerRef.current.started = false;
+
+    // if it wasn't a horizontal swipe gesture, do nothing
+    if (pr.mode !== "h") {
+      pr.mode = null;
+      setDragX(0);
+      setSnap(true);
+      // snap off immediately (so next drag is raw)
+      requestAnimationFrame(() => setSnap(false));
+      return;
+    }
+
+    pr.mode = null;
+
+    const canPrev = safeActiveIndex > 0;
+    const canNext = safeActiveIndex < categories.length - 1;
+
+    const threshold = Math.floor(w * 0.22);
+    const fast = Math.abs(vx) > 0.75; // quick flick
+
+    const wantNext = (dx < -threshold || (fast && vx < 0)) && canNext;
+    const wantPrev = (dx > threshold || (fast && vx > 0)) && canPrev;
+
+    if (!wantNext && !wantPrev) {
+      // snap back
+      setSnap(true);
+      setDragX(0);
+      // disable transition after it completes so next drag is raw
+      window.setTimeout(() => setSnap(false), 220);
+      return;
+    }
+
+    // slide out fully, then switch, then snap back to 0 without transition
+    setSnap(true);
+    setDragX(wantNext ? -w : w);
+
+    window.setTimeout(() => {
+      // after slide-out, update category and reset position instantly
+      if (wantNext) goNext();
+      else goPrev();
+
+      // jump back to center without transition
+      setSnap(false);
+      setDragX(0);
+    }, 190);
+  };
+
+  const cancelPointer = (e) => {
+    if (pointerRef.current.id !== e.pointerId) return;
+    pointerRef.current.id = null;
+    pointerRef.current.mode = null;
+    setSnap(true);
+    setDragX(0);
+    window.setTimeout(() => setSnap(false), 180);
   };
 
   const OptionRow = ({ value }) => {
@@ -167,8 +315,8 @@ export function ElectiveSelectorModal({
           setValue(safeActiveCategory, value);
         }}
         className={[
-          "w-full text-left rounded-lg border transition-colors",
-          "px-4 py-3 min-h-[52px]",
+          "w-full text-left rounded-xl border transition-colors",
+          "px-4 py-3 min-h-[56px]",
           "flex items-center gap-3",
           isActive
             ? "border-primary bg-primary/10"
@@ -217,7 +365,7 @@ export function ElectiveSelectorModal({
         type="button"
         onClick={() => goToCategory(idx)}
         className={[
-          "w-full text-left rounded-lg border px-3 py-2 transition-colors",
+          "w-full text-left rounded-xl border px-3 py-2 transition-colors",
           isHere
             ? "border-primary bg-primary/10"
             : "border-border hover:bg-accent/40",
@@ -239,7 +387,7 @@ export function ElectiveSelectorModal({
     );
   };
 
-  // 2) If no categories, render null (BUT after hooks ran)
+  // after hooks: if no categories, render nothing
   if (!hasCategories) return null;
 
   return (
@@ -252,21 +400,21 @@ export function ElectiveSelectorModal({
             "fixed z-[9999] bg-popover border border-border shadow-xl overflow-hidden focus:outline-none",
             "flex flex-col",
 
-            // Mobile: bottom sheet
-            "left-0 right-0 bottom-0 top-auto w-full max-h-[92vh] rounded-t-2xl",
+            // Mobile: real height + bottom sheet
+            "left-0 right-0 bottom-0 top-auto w-full h-[92vh] max-h-[92vh] rounded-t-2xl",
 
             // Desktop: centered
             "md:left-1/2 md:top-1/2 md:bottom-auto md:right-auto",
             "md:-translate-x-1/2 md:-translate-y-1/2",
             "md:w-[min(980px,calc(100vw-32px))]",
-            "md:max-h-[min(85vh,860px)]",
+            "md:h-auto md:max-h-[min(85vh,860px)]",
             "md:rounded-2xl",
           ].join(" ")}
         >
           {/* Header */}
           <div
             className={[
-              "sticky top-0 z-10 bg-popover/85 backdrop-blur-sm border-b border-border",
+              "shrink-0 bg-popover/85 backdrop-blur-sm border-b border-border",
               "px-4 md:px-5",
               "pt-[calc(env(safe-area-inset-top)+14px)] md:pt-4 pb-4",
             ].join(" ")}
@@ -315,7 +463,7 @@ export function ElectiveSelectorModal({
                     {safeActiveCategory}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    Swipe on the list to switch categories
+                    Drag the options left/right to change category
                   </div>
                 </div>
 
@@ -356,13 +504,13 @@ export function ElectiveSelectorModal({
           {/* Body */}
           <div className="flex-1 min-h-0 flex md:flex-row">
             {/* Desktop category rail */}
-            <div className="hidden md:flex md:w-[320px] border-r border-border bg-background/30 flex-col">
-              <div className="p-4">
+            <div className="hidden md:flex md:w-[320px] border-r border-border bg-background/30 flex-col min-h-0">
+              <div className="p-4 shrink-0">
                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   Categories
                 </div>
               </div>
-              <div className="px-3 pb-4 overflow-auto flex-1 space-y-2">
+              <div className="px-3 pb-4 overflow-auto flex-1 min-h-0 space-y-2">
                 {categories.map((cat, idx) => (
                   <DesktopCategoryItem key={cat} cat={cat} idx={idx} />
                 ))}
@@ -370,9 +518,9 @@ export function ElectiveSelectorModal({
             </div>
 
             {/* Options panel */}
-            <div className="flex-1 min-w-0 flex flex-col">
+            <div className="flex-1 min-w-0 flex flex-col min-h-0">
               {/* Desktop title row */}
-              <div className="hidden md:block px-5 pt-5">
+              <div className="hidden md:block px-5 pt-5 shrink-0">
                 <div className="text-lg font-bold text-foreground break-words">
                   {safeActiveCategory}
                 </div>
@@ -388,48 +536,78 @@ export function ElectiveSelectorModal({
                 </div>
               </div>
 
-              {/* Search bar */}
-              <div className="px-4 md:px-5 pt-4 md:pt-4">
-                <div className="relative">
-                  <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search by code or name"
-                    inputMode="search"
-                    className={[
-                      "w-full h-11 rounded-lg border border-input bg-background pl-9 pr-3 text-sm",
-                      "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                    ].join(" ")}
-                  />
-                </div>
-
-                <div className="mt-2 text-xs text-muted-foreground">
-                  {query.trim()
-                    ? `Showing ${filteredOptions.length} match${filteredOptions.length === 1 ? "" : "es"}`
-                    : `Showing ${allOptionsForActive.length} option${allOptionsForActive.length === 1 ? "" : "s"}`}
-                </div>
-              </div>
-
-              {/* List */}
+              {/* Swipe + Search + List wrapper */}
               <div
-                className="flex-1 min-h-0 overflow-auto px-4 md:px-5 py-4 space-y-2"
-                role="radiogroup"
-                aria-label={`Options for ${safeActiveCategory}`}
-                onTouchStart={onTouchStart}
-                onTouchEnd={onTouchEnd}
+                ref={contentRef}
+                className="flex-1 min-h-0 flex flex-col"
+                // important: allow vertical scrolling normally, we handle horizontal ourselves
+                style={{ touchAction: "pan-y" }}
+                onPointerDown={beginPointer}
+                onPointerMove={movePointer}
+                onPointerUp={endPointer}
+                onPointerCancel={cancelPointer}
               >
-                <OptionRow value={ELECTIVE_NONE} />
-
-                {filteredOptions.length === 0 ? (
-                  <div className="mt-2 rounded-lg border border-border bg-background/40 p-4 text-sm text-muted-foreground">
-                    No results. Try a different search.
+                {/* Search bar */}
+                <div
+                  className="px-4 md:px-5 pt-4 md:pt-4 shrink-0"
+                  style={{
+                    transform: `translateX(${dragX}px)`,
+                    transition: snap ? "transform 200ms ease-out" : "none",
+                    willChange: "transform",
+                  }}
+                >
+                  <div className="relative">
+                    <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Search by code or name"
+                      inputMode="search"
+                      className={[
+                        "w-full h-11 rounded-xl border border-input bg-background pl-9 pr-3 text-sm",
+                        "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                      ].join(" ")}
+                    />
                   </div>
-                ) : (
-                  filteredOptions.map((code) => (
-                    <OptionRow key={code} value={code} />
-                  ))
-                )}
+
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    {query.trim()
+                      ? `Showing ${filteredOptions.length} match${filteredOptions.length === 1 ? "" : "es"}`
+                      : `Showing ${allOptionsForActive.length} option${allOptionsForActive.length === 1 ? "" : "s"}`}
+                  </div>
+                </div>
+
+                {/* List (always visible on mobile, scrolls properly) */}
+                <div
+                  className={[
+                    "flex-1 min-h-0 overflow-auto",
+                    "px-4 md:px-5 py-4 space-y-2",
+                    "overscroll-contain",
+                  ].join(" ")}
+                  role="radiogroup"
+                  aria-label={`Options for ${safeActiveCategory}`}
+                  style={{
+                    transform: `translateX(${dragX}px)`,
+                    transition: snap ? "transform 200ms ease-out" : "none",
+                    willChange: "transform",
+                    WebkitOverflowScrolling: "touch",
+                  }}
+                >
+                  <OptionRow value={ELECTIVE_NONE} />
+
+                  {filteredOptions.length === 0 ? (
+                    <div className="mt-2 rounded-xl border border-border bg-background/40 p-4 text-sm text-muted-foreground">
+                      No results. Try a different search.
+                    </div>
+                  ) : (
+                    filteredOptions.map((code) => (
+                      <OptionRow key={code} value={code} />
+                    ))
+                  )}
+
+                  {/* extra space so last option never sits under the footer on mobile */}
+                  <div className="h-[calc(env(safe-area-inset-bottom)+96px)] md:h-6" />
+                </div>
               </div>
             </div>
           </div>
@@ -437,7 +615,7 @@ export function ElectiveSelectorModal({
           {/* Footer */}
           <div
             className={[
-              "sticky bottom-0 z-10 bg-popover/85 backdrop-blur-sm border-t border-border",
+              "shrink-0 bg-popover/85 backdrop-blur-sm border-t border-border",
               "px-4 md:px-5 py-4",
               "pb-[calc(env(safe-area-inset-bottom)+14px)] md:pb-4",
               "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3",
