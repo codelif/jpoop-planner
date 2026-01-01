@@ -20,7 +20,10 @@ export function buildDefaultElectiveSelection(electivesByCategory = {}) {
   return selection;
 }
 
-export function normalizeElectiveSelection(selection, electivesByCategory = {}) {
+export function normalizeElectiveSelection(
+  selection,
+  electivesByCategory = {},
+) {
   const normalized = {};
   const cats = Object.keys(electivesByCategory || {});
   for (const cat of cats) {
@@ -56,7 +59,10 @@ export function filterClassItemByElectives(item, selectedByCategory = {}) {
   const category = item.category;
 
   // If the item has a category, it must match that category's chosen code.
-  if (category && Object.prototype.hasOwnProperty.call(selectedByCategory, category)) {
+  if (
+    category &&
+    Object.prototype.hasOwnProperty.call(selectedByCategory, category)
+  ) {
     return selectedByCategory[category] === code;
   }
 
@@ -71,7 +77,9 @@ export function filterWeekByElectives(week = {}, selectedByCategory = {}) {
   const out = {};
   for (const [day, list] of Object.entries(week || {})) {
     const arr = Array.isArray(list) ? list : [];
-    out[day] = arr.filter((item) => filterClassItemByElectives(item, selectedByCategory));
+    out[day] = arr.filter((item) =>
+      filterClassItemByElectives(item, selectedByCategory),
+    );
   }
   return out;
 }

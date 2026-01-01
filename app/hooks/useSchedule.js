@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useSwipeable } from "react-swipeable";
 import {
   ELECTIVE_NONE,
   buildDefaultElectiveSelection,
@@ -695,18 +694,6 @@ export function useSchedule() {
   };
 
   const [slideDirection, setSlideDirection] = React.useState(0);
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => {
-      if (tableMode) return;
-      changeDay(1);
-    },
-    onSwipedRight: () => {
-      if (tableMode) return;
-      changeDay(-1);
-    },
-    preventDefaultTouchmoveEvent: true,
-    trackMouse: false,
-  });
 
   React.useEffect(() => {
     if (tableMode) return;
@@ -796,7 +783,6 @@ export function useSchedule() {
     handleSemesterChange,
     handlePhaseChange,
     handleBatchChange,
-    swipeHandlers,
     slideDirection,
     showSwipeHint,
     dismissHint,
@@ -816,5 +802,6 @@ export function useSchedule() {
     setElectiveModalOpen,
     handleElectiveSelect,
     openElectiveSelector,
+    changeDay,
   };
 }

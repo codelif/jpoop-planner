@@ -29,7 +29,9 @@ export function formatBatchRanges(batches = []) {
 
   const parts = [];
 
-  const prefixes = Array.from(byPrefix.keys()).sort((a, b) => a.localeCompare(b));
+  const prefixes = Array.from(byPrefix.keys()).sort((a, b) =>
+    a.localeCompare(b),
+  );
   for (const prefix of prefixes) {
     const nums = Array.from(byPrefix.get(prefix)).sort((a, b) => a - b);
     let start = null;
@@ -45,12 +47,16 @@ export function formatBatchRanges(batches = []) {
         prev = n;
         continue;
       }
-      parts.push(start === prev ? `${prefix}${start}` : `${prefix}${start}-${prev}`);
+      parts.push(
+        start === prev ? `${prefix}${start}` : `${prefix}${start}-${prev}`,
+      );
       start = n;
       prev = n;
     }
     if (start != null) {
-      parts.push(start === prev ? `${prefix}${start}` : `${prefix}${start}-${prev}`);
+      parts.push(
+        start === prev ? `${prefix}${start}` : `${prefix}${start}-${prev}`,
+      );
     }
   }
 

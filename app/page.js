@@ -1,7 +1,12 @@
 "use client";
 
 import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  animate,
+} from "framer-motion";
 import { useSchedule } from "@/app/hooks/useSchedule";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -30,6 +35,174 @@ const daysOfWeek = [
   "Saturday",
 ];
 
+function useViewportWidth() {
+  const [w, setW] = React.useState(() =>
+    typeof window !== "undefined" ? window.innerWidth : 360,
+  );
+
+  React.useEffect(() => {
+    const onResize = () => setW(window.innerWidth);
+    window.addEventListener("resize", onResize, { passive: true });
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  return w;
+}
+
+function DaySwipeMotion({
+  disabled,
+  onSwipeLeft,
+  onSwipeRight,
+  children,
+  style,
+  ...motionProps
+}) {
+  const x = useMotionValue(0);
+
+  const ptr = React.useRef({
+    id: null,
+    mode: null, // null | "h" | "v"
+    startX: 0,
+    startY: 0,
+    lastX: 0,
+    lastT: 0,
+    dxRaw: 0,
+  });
+
+  const MIN_LOCK_PX = 8;
+  const LOCK_RATIO = 1.2;
+  const FLICK_VX = 0.75; // px/ms (~750px/s)
+
+  const clampRubber = (dx, w) => {
+    // 1:1 until ~35% screen, then rubber-band
+    const max = w * 0.35;
+    if (dx > max) return max + (dx - max) * 0.2;
+    if (dx < -max) return -max + (dx + max) * 0.2;
+    return dx;
+  };
+
+  const resetPointer = () => {
+    ptr.current.id = null;
+    ptr.current.mode = null;
+    ptr.current.dxRaw = 0;
+  };
+
+  const onPointerDown = (e) => {
+    if (disabled) return;
+    if (ptr.current.id != null) return;
+
+    // Only treat touch/pen as "touch gesture"
+    if (e.pointerType !== "touch" && e.pointerType !== "pen") return;
+
+    ptr.current.id = e.pointerId;
+    ptr.current.mode = null;
+    ptr.current.startX = e.clientX;
+    ptr.current.startY = e.clientY;
+    ptr.current.lastX = e.clientX;
+    ptr.current.lastT = performance.now();
+    ptr.current.dxRaw = 0;
+
+    // stop any snap-back animation currently running
+    x.stop?.();
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  const onPointerMove = (e) => {
+    if (ptr.current.id !== e.pointerId) return;
+
+    const now = performance.now();
+    const dx = e.clientX - ptr.current.startX;
+    const dy = e.clientY - ptr.current.startY;
+
+    // Update velocity basis
+    ptr.current.lastX = e.clientX;
+    ptr.current.lastT = now;
+    ptr.current.dxRaw = dx;
+
+    // Decide if this gesture is horizontal or vertical (once)
+    if (!ptr.current.mode) {
+      const ax = Math.abs(dx);
+      const ay = Math.abs(dy);
+
+      if (ax < MIN_LOCK_PX && ay < MIN_LOCK_PX) return;
+
+      if (ax > ay * LOCK_RATIO) ptr.current.mode = "h";
+      else ptr.current.mode = "v";
+    }
+
+    // If horizontal, we own it: prevent default + update x (1:1)
+    if (ptr.current.mode === "h") {
+      if (e.cancelable) e.preventDefault();
+
+      const w = window.innerWidth || 360;
+      x.set(clampRubber(dx, w));
+    }
+  };
+
+  const onPointerUp = (e) => {
+    if (ptr.current.id !== e.pointerId) return;
+
+    const mode = ptr.current.mode;
+    const dxRaw = ptr.current.dxRaw;
+
+    // If it wasn't horizontal, do nothing (let scroll be scroll)
+    if (mode !== "h") {
+      resetPointer();
+      return;
+    }
+
+    const w = window.innerWidth || 360;
+    const threshold = w * 0.22;
+
+    // Approximate release velocity using last segment
+    const now = performance.now();
+    const dt = Math.max(1, now - ptr.current.lastT);
+    const vx = (e.clientX - ptr.current.lastX) / dt;
+
+    const flick = Math.abs(vx) > FLICK_VX;
+
+    const goNext = dxRaw < -threshold || (flick && vx < 0);
+    const goPrev = dxRaw > threshold || (flick && vx > 0);
+
+    if (goNext) {
+      onSwipeLeft?.();
+      // do NOT snap x back — exit variant will take over
+    } else if (goPrev) {
+      onSwipeRight?.();
+    } else {
+      animate(x, 0, { type: "tween", duration: 0.18, ease: "easeOut" });
+    }
+
+    resetPointer();
+  };
+
+  const onPointerCancel = (e) => {
+    if (ptr.current.id !== e.pointerId) return;
+    animate(x, 0, { type: "tween", duration: 0.18, ease: "easeOut" });
+    resetPointer();
+  };
+
+  return (
+    <motion.div
+      {...motionProps}
+      style={{
+        ...style,
+        x,
+        // Key part: keep vertical scrolling working; we only preventDefault when we lock horizontal
+        touchAction: "pan-y",
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+    >
+      {children}
+    </motion.div>
+  );
+}
 export default function Page() {
   const {
     day,
@@ -55,7 +228,6 @@ export default function Page() {
     handleSemesterChange,
     handlePhaseChange,
     handleBatchChange,
-    swipeHandlers,
     slideDirection,
     showSwipeHint,
     dismissHint,
@@ -74,8 +246,10 @@ export default function Page() {
     setElectiveModalOpen,
     handleElectiveSelect,
     openElectiveSelector,
+    changeDay,
   } = useSchedule();
 
+  const viewportW = useViewportWidth();
   const [showTimeline, setShowTimeline] = React.useState(true);
   const [showBreaks, setShowBreaks] = React.useState(true);
   const [scrollSwitch, setNaturalScroll] = React.useState(true);
@@ -131,10 +305,7 @@ export default function Page() {
   // Table mode
   if (tableMode) {
     return (
-      <div
-        className="min-h-screen flex flex-col overflow-x-hidden"
-        {...swipeHandlers}
-      >
+      <div className="min-h-screen flex flex-col overflow-x-hidden">
         <Navbar
           showTimeline={showTimeline}
           scrollSwitch={scrollSwitch}
@@ -207,7 +378,7 @@ export default function Page() {
 
   // Normal view
   return (
-    <div className="min-h-screen flex flex-col" {...swipeHandlers}>
+    <div className="min-h-screen flex flex-col">
       <Navbar
         showTimeline={showTimeline}
         scrollSwitch={scrollSwitch}
@@ -247,10 +418,15 @@ export default function Page() {
         />
 
         <div className="relative" style={{ minHeight: "500px" }}>
-          <AnimatePresence initial={false} custom={slideDirection} mode="sync">
-            <motion.div
+          <AnimatePresence
+            initial={false}
+            custom={{ direction: slideDirection, width: viewportW }}
+            mode="sync"
+          >
+            <DaySwipeMotion
               key={day}
-              custom={slideDirection}
+              disabled={showSkeleton || tableMode}
+              custom={{ direction: slideDirection, width: viewportW }}
               variants={slideVariants}
               initial="enter"
               animate="center"
@@ -259,6 +435,8 @@ export default function Page() {
                 x: { type: "tween", duration: 0.3, ease: "easeInOut" },
                 opacity: { duration: 0.2 },
               }}
+              onSwipeLeft={() => changeDay(1)}
+              onSwipeRight={() => changeDay(-1)}
             >
               {showSkeleton ? (
                 <ScheduleSkeleton />
@@ -304,7 +482,7 @@ export default function Page() {
                   )}
                 </div>
               )}
-            </motion.div>
+            </DaySwipeMotion>
           </AnimatePresence>
         </div>
 
