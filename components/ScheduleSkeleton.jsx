@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 export function ScheduleSkeleton() {
   return (
@@ -72,5 +72,5 @@ export function ScheduleSkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }

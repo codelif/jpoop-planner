@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import React from "react"
-import * as Dialog from "@radix-ui/react-dialog"
-import { Button } from "@/components/ui/button"
-import { X, Settings, ArrowLeftRight } from "lucide-react"
-import { useTheme } from "next-themes"
-import * as SwitchPrimitive from "@radix-ui/react-switch"
+import React from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { Button } from "@/components/ui/button";
+import { X, Settings, ArrowLeftRight } from "lucide-react";
+import { useTheme } from "next-themes";
+import * as SwitchPrimitive from "@radix-ui/react-switch";
 
 // ——— Reusable bits ———
 function SettingSwitch({ id, label, checked, onChange }) {
@@ -34,12 +34,12 @@ function SettingSwitch({ id, label, checked, onChange }) {
         />
       </SwitchPrimitive.Root>
     </div>
-  )
+  );
 }
 
 function ThemeButtons() {
-  const { theme, setTheme } = useTheme()
-  const options = ["light", "dark", "system"]
+  const { theme, setTheme } = useTheme();
+  const options = ["light", "dark", "system"];
 
   return (
     <div className="mb-6 space-y-1">
@@ -56,7 +56,7 @@ function ThemeButtons() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 // ——— Main component ———
@@ -71,7 +71,7 @@ export function SettingsModal({
   onToggleBreaks,
   onOpenComparison,
 }) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(false);
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -105,7 +105,9 @@ export function SettingsModal({
             z-[9999]
           "
         >
-          <Dialog.Title className="text-lg font-bold mb-4">Settings</Dialog.Title>
+          <Dialog.Title className="text-lg font-bold mb-4">
+            Settings
+          </Dialog.Title>
           <Dialog.Description className="text-sm text-muted-foreground mb-4">
             Customize your JIIT Planner experience
           </Dialog.Description>
@@ -119,8 +121,8 @@ export function SettingsModal({
             <Button
               variant="outline"
               onClick={() => {
-                setOpen(false)
-                onOpenComparison?.()
+                setOpen(false);
+                onOpenComparison?.();
               }}
               className="w-full justify-start"
             >
@@ -157,7 +159,10 @@ export function SettingsModal({
 
           {/* Close Button (X) */}
           <Dialog.Close asChild>
-            <Button variant="secondary" className="absolute top-4 right-4 rounded-full h-8 w-8 p-0">
+            <Button
+              variant="secondary"
+              className="absolute top-4 right-4 rounded-full h-8 w-8 p-0"
+            >
               <X className="h-4 w-4" />
               <span className="sr-only">Close</span>
             </Button>
@@ -165,6 +170,5 @@ export function SettingsModal({
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-  )
+  );
 }
-

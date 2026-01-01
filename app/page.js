@@ -1,25 +1,34 @@
-"use client"
+"use client";
 
-import React from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { useSchedule } from "@/app/hooks/useSchedule"
-import { Navbar } from "@/components/Navbar"
-import { Footer } from "@/components/Footer"
-import { Timeline } from "@/components/Timeline"
-import { ScheduleCard } from "@/components/ScheduleCard"
-import { BreaksSection } from "@/components/BreaksSection"
-import { SwipeHint } from "@/components/SwipeHint"
-import { UpdateIndicator } from "@/components/UpdateIndicator"
-import { ScheduleFilters } from "@/components/ScheduleFilters"
-import { ScheduleSkeleton } from "@/components/ScheduleSkeleton"
-import { NoScheduleResults } from "@/components/NoScheduleResults"
-import { TimetableComparison } from "@/components/TimetableComparison"
-import { slideVariants } from "@/app/lib/motion"
+import React from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useSchedule } from "@/app/hooks/useSchedule";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import { Timeline } from "@/components/Timeline";
+import { ScheduleCard } from "@/components/ScheduleCard";
+import { BreaksSection } from "@/components/BreaksSection";
+import { SwipeHint } from "@/components/SwipeHint";
+import { UpdateIndicator } from "@/components/UpdateIndicator";
+import { ScheduleFilters } from "@/components/ScheduleFilters";
+import { ScheduleSkeleton } from "@/components/ScheduleSkeleton";
+import { NoScheduleResults } from "@/components/NoScheduleResults";
+import { TimetableComparison } from "@/components/TimetableComparison";
+import { slideVariants } from "@/app/lib/motion";
+import { ScheduleTableView } from "@/components/ScheduleTableView";
 
-// NEW: Import TableView
-import { ScheduleTableView } from "@/components/ScheduleTableView"
+// NEW
+import { ElectiveSelectorModal } from "@/components/ElectiveSelectorModal";
 
-const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+const daysOfWeek = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 export default function Page() {
   const {
@@ -56,69 +65,80 @@ export default function Page() {
     allDaysClasses,
     breaks,
     metadata,
-  } = useSchedule()
 
-  const [showTimeline, setShowTimeline] = React.useState(true)
-  const [showBreaks, setShowBreaks] = React.useState(true)
-  const [scrollSwitch, setNaturalScroll] = React.useState(true)
-  const [showComparison, setShowComparison] = React.useState(false)
+    // NEW: electives
+    hasElectives,
+    electivesByCategory,
+    selectedElectives,
+    electiveModalOpen,
+    setElectiveModalOpen,
+    handleElectiveSelect,
+    openElectiveSelector,
+  } = useSchedule();
+
+  const [showTimeline, setShowTimeline] = React.useState(true);
+  const [showBreaks, setShowBreaks] = React.useState(true);
+  const [scrollSwitch, setNaturalScroll] = React.useState(true);
+  const [showComparison, setShowComparison] = React.useState(false);
 
   React.useEffect(() => {
     const currentVersion = "jiit-planner-cache-v2025-08-10_00-57-55";
     const storedVersion = localStorage.getItem("app-version");
 
     if (!storedVersion || storedVersion !== currentVersion) {
-      localStorage.clear()
+      localStorage.clear();
     }
 
-    localStorage.setItem('app-version', currentVersion)
-  }, [])
+    localStorage.setItem("app-version", currentVersion);
+  }, []);
 
   React.useEffect(() => {
-    const stored = localStorage.getItem("showTimeline")
+    const stored = localStorage.getItem("showTimeline");
     if (stored === "false") {
-      setShowTimeline(false)
+      setShowTimeline(false);
     }
-  }, [])
+  }, []);
 
   function handleToggleTimeline(newVal) {
-    setShowTimeline(newVal)
-    localStorage.setItem("showTimeline", newVal ? "true" : "false")
+    setShowTimeline(newVal);
+    localStorage.setItem("showTimeline", newVal ? "true" : "false");
   }
 
   React.useEffect(() => {
-    const stored = localStorage.getItem("showBreaks")
+    const stored = localStorage.getItem("showBreaks");
     if (stored === "false") {
-      setShowBreaks(false)
+      setShowBreaks(false);
     }
-  }, [])
+  }, []);
 
   function handleToggleBreaks(newVal) {
-    setShowBreaks(newVal)
-    localStorage.setItem("showBreaks", newVal ? "true" : "false")
+    setShowBreaks(newVal);
+    localStorage.setItem("showBreaks", newVal ? "true" : "false");
   }
 
   React.useEffect(() => {
-    const stored = localStorage.getItem("scrollSwitch")
+    const stored = localStorage.getItem("scrollSwitch");
     if (stored === "false") {
-      setNaturalScroll(false)
+      setNaturalScroll(false);
     }
-  }, [])
+  }, []);
 
   function handleToggleScroll(newVal) {
-    setNaturalScroll(newVal)
-    localStorage.setItem("scrollSwitch", newVal ? "true" : "false")
+    setNaturalScroll(newVal);
+    localStorage.setItem("scrollSwitch", newVal ? "true" : "false");
   }
 
-
-  // If we are in tableMode, show the new table-based schedule
+  // Table mode
   if (tableMode) {
     return (
-      <div className="min-h-screen flex flex-col overflow-x-hidden" {...swipeHandlers}>
+      <div
+        className="min-h-screen flex flex-col overflow-x-hidden"
+        {...swipeHandlers}
+      >
         <Navbar
           showTimeline={showTimeline}
-          scrollSwitch= {scrollSwitch}
-          onScrollSwitch= {handleToggleScroll}
+          scrollSwitch={scrollSwitch}
+          onScrollSwitch={handleToggleScroll}
           onToggleTimeline={handleToggleTimeline}
           showBreaks={showBreaks}
           onToggleBreaks={handleToggleBreaks}
@@ -129,8 +149,6 @@ export default function Page() {
 
         <UpdateIndicator status={updateStatus} />
 
-        {/* We hide the day-based filters in table mode, but still show the course/semester/batch/phase filters. 
-            Feel free to remove "day" entirely. */}
         <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-4 relative overflow-auto">
           <ScheduleFilters
             day={day}
@@ -150,8 +168,10 @@ export default function Page() {
             handleBatchChange={handleBatchChange}
             filtersOpen={filtersOpen}
             setFiltersOpen={setFiltersOpen}
-            // We'll pass a prop to hide the "Day" filter entirely
             hideDayFilter
+            // NEW
+            showElectivesButton={hasElectives}
+            onOpenElectives={openElectiveSelector}
           />
 
           {showSkeleton ? (
@@ -165,25 +185,34 @@ export default function Page() {
 
         <Footer />
 
+        {/* Electives modal */}
+        <ElectiveSelectorModal
+          open={electiveModalOpen}
+          onOpenChange={setElectiveModalOpen}
+          electivesByCategory={electivesByCategory}
+          selected={selectedElectives}
+          onSelect={handleElectiveSelect}
+        />
+
         {/* Timetable Comparison Modal */}
         {showComparison && metadata && (
-          <TimetableComparison 
-            metadata={metadata} 
-            onClose={() => setShowComparison(false)} 
+          <TimetableComparison
+            metadata={metadata}
+            onClose={() => setShowComparison(false)}
           />
         )}
       </div>
-    )
+    );
   }
 
-  // Normal “day/timeline” view
+  // Normal view
   return (
     <div className="min-h-screen flex flex-col" {...swipeHandlers}>
       <Navbar
         showTimeline={showTimeline}
-        scrollSwitch= {scrollSwitch}
+        scrollSwitch={scrollSwitch}
         onToggleTimeline={handleToggleTimeline}
-        onScrollSwitch= {handleToggleScroll}
+        onScrollSwitch={handleToggleScroll}
         showBreaks={showBreaks}
         onToggleBreaks={handleToggleBreaks}
         tableMode={tableMode}
@@ -212,7 +241,9 @@ export default function Page() {
           handleBatchChange={handleBatchChange}
           filtersOpen={filtersOpen}
           setFiltersOpen={setFiltersOpen}
-        // not hiding day filter in normal mode
+          // NEW
+          showElectivesButton={hasElectives}
+          onOpenElectives={openElectiveSelector}
         />
 
         <div className="relative" style={{ minHeight: "500px" }}>
@@ -251,12 +282,15 @@ export default function Page() {
                       )}
                       <div className="flex-1 space-y-10 text-foreground transition-all">
                         {timelineItems.map((item, index) => {
-                          const timeActive = isCardTimeActive(item)
+                          const timeActive = isCardTimeActive(item);
                           return (
                             <div key={index} ref={cardRefs.current[index]}>
-                              <ScheduleCard item={item} timeActive={timeActive} />
+                              <ScheduleCard
+                                item={item}
+                                timeActive={timeActive}
+                              />
                             </div>
-                          )
+                          );
                         })}
                       </div>
                     </div>
@@ -276,8 +310,12 @@ export default function Page() {
 
         {!showSkeleton && timelineItems.length > 0 && (
           <div className="text-xs text-center text-muted-foreground mt-2 absolute bottom-4 left-0 right-0">
-             <span className="block md:hidden">Swipe left/right to change days</span>
-             <span className="hidden md:block">Use arrow keys/double-finger swipe to change days</span>
+            <span className="block md:hidden">
+              Swipe left/right to change days
+            </span>
+            <span className="hidden md:block">
+              Use arrow keys/double-finger swipe to change days
+            </span>
           </div>
         )}
       </main>
@@ -285,14 +323,22 @@ export default function Page() {
       {showSwipeHint && <SwipeHint onDismiss={dismissHint} />}
       <Footer />
 
+      {/* Electives modal */}
+      <ElectiveSelectorModal
+        open={electiveModalOpen}
+        onOpenChange={setElectiveModalOpen}
+        electivesByCategory={electivesByCategory}
+        selected={selectedElectives}
+        onSelect={handleElectiveSelect}
+      />
+
       {/* Timetable Comparison Modal */}
       {showComparison && metadata && (
-        <TimetableComparison 
-          metadata={metadata} 
-          onClose={() => setShowComparison(false)} 
+        <TimetableComparison
+          metadata={metadata}
+          onClose={() => setShowComparison(false)}
         />
       )}
     </div>
-  )
+  );
 }
-

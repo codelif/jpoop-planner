@@ -11,7 +11,7 @@ export function Navbar({
   onScrollSwitch,
   showBreaks,
   onToggleBreaks,
-  onOpenComparison
+  onOpenComparison,
 }) {
   return (
     <header className="border-b bg-background sticky top-0 z-50">
@@ -25,7 +25,11 @@ export function Navbar({
 
         <div className="flex items-center gap-4">
           <Button variant="ghost" asChild>
-            <a href="https://github.com/codelif/jpoop-planner" target="_blank" rel="noopener noreferrer">
+            <a
+              href="https://github.com/codelif/jpoop-planner"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Github className="h-5 w-5" />
             </a>
           </Button>
@@ -45,5 +49,5 @@ export function Navbar({
         </div>
       </div>
     </header>
-  )
+  );
 }

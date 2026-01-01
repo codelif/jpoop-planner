@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
+import { motion } from "framer-motion";
 import {
   Select,
   SelectTrigger,
   SelectContent,
   SelectItem,
   SelectValue,
-} from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 /**
  * ScheduleFilters
@@ -34,25 +34,39 @@ export function ScheduleFilters({
 
   // optional to hide day filter (used in table mode)
   hideDayFilter = false,
+
+  // NEW: electives button support
+  showElectivesButton = false,
+  onOpenElectives,
 }) {
   return (
     <div className="bg-background/80 backdrop-blur-sm mb-4">
-      {/* Top bar with selected day/batch and the "Filters" toggle button (only show day if not hidden) */}
+      {/* Top bar */}
       <div className="flex items-center pl-[10px] justify-between mb-4">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           {!hideDayFilter && (
             <>
-            <span className="font-medium">{day}</span>
-            <span>•</span>
+              <span className="font-medium">{day}</span>
+              <span>•</span>
             </>
           )}
-          {batch && (
-              <span className="font-medium">{batch.toUpperCase()}</span>
-          )}
+          {batch && <span className="font-medium">{batch.toUpperCase()}</span>}
         </div>
-        <Button variant="outline" onClick={() => setFiltersOpen(!filtersOpen)}>
-          {filtersOpen ? "Hide Filters" : "Filters"}
-        </Button>
+
+        <div className="flex items-center gap-2">
+          {showElectivesButton && (
+            <Button variant="outline" onClick={() => onOpenElectives?.()}>
+              Select electives
+            </Button>
+          )}
+
+          <Button
+            variant="outline"
+            onClick={() => setFiltersOpen(!filtersOpen)}
+          >
+            {filtersOpen ? "Hide Filters" : "Filters"}
+          </Button>
+        </div>
       </div>
 
       <motion.div
@@ -68,7 +82,7 @@ export function ScheduleFilters({
         className="overflow-hidden"
       >
         <div className="grid grid-cols-2 gap-4 pb-4">
-          {/* Day Select (hidden if hideDayFilter is true) */}
+          {/* Day Select */}
           {!hideDayFilter && (
             <div className="flex items-center gap-2">
               <span className="w-24 text-right">Day:</span>
@@ -173,6 +187,5 @@ export function ScheduleFilters({
         </div>
       </motion.div>
     </div>
-  )
+  );
 }
-
