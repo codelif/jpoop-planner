@@ -202,7 +202,7 @@ export function ElectiveSelectorModal({
     // capture so we keep getting events even if finger leaves element
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
+    } catch { }
   };
 
   const movePointer = (e) => {
@@ -216,16 +216,18 @@ export function ElectiveSelectorModal({
     pr.lastY = e.clientY;
     pr.dx = dx;
 
-    // decide gesture direction once
+    // decide gesture direction once (more forgiving; avoids "v" too early)
     if (!pr.mode) {
       const ax = Math.abs(dx);
       const ay = Math.abs(dy);
 
-      // don’t steal vertical scroll unless clearly horizontal
-      if (ax < 8 && ay < 8) return;
+      // small slop: don't decide yet
+      if (ax < 6 && ay < 6) return;
 
-      if (ax > ay * 1.2) pr.mode = "h";
-      else pr.mode = "v";
+      // bias toward horizontal; only lock vertical when it's very clearly vertical
+      if (ax > ay + 4) pr.mode = "h";
+      else if (ay > ax + 10) pr.mode = "v";
+      else return; // still undecided
     }
 
     if (pr.mode === "h") {
@@ -239,6 +241,8 @@ export function ElectiveSelectorModal({
     if (pointerRef.current.id !== e.pointerId) return;
 
     const pr = pointerRef.current;
+    const mode = pr.mode;
+
     const w = widthRef.current || 360;
     const dt = Math.max(1, Date.now() - pr.startT);
     const dx = pr.dx;
@@ -247,18 +251,10 @@ export function ElectiveSelectorModal({
     // reset pointer
     pointerRef.current.id = null;
     pointerRef.current.started = false;
-
-    // if it wasn't a horizontal swipe gesture, do nothing
-    if (pr.mode !== "h") {
-      pr.mode = null;
-      setDragX(0);
-      setSnap(true);
-      // snap off immediately (so next drag is raw)
-      requestAnimationFrame(() => setSnap(false));
-      return;
-    }
-
     pr.mode = null;
+
+    // if it wasn't a horizontal swipe gesture, do nothing (no bounce)
+    if (mode !== "h") return;
 
     const canPrev = safeActiveIndex > 0;
     const canNext = safeActiveIndex < categories.length - 1;
@@ -295,8 +291,16 @@ export function ElectiveSelectorModal({
 
   const cancelPointer = (e) => {
     if (pointerRef.current.id !== e.pointerId) return;
+
+    const wasHorizontal = pointerRef.current.mode === "h";
+
     pointerRef.current.id = null;
+    pointerRef.current.started = false;
     pointerRef.current.mode = null;
+
+    // Only snap if we were actually doing a horizontal swipe (prevents "bounce" on scroll cancel)
+    if (!wasHorizontal) return;
+
     setSnap(true);
     setDragX(0);
     window.setTimeout(() => setSnap(false), 180);
@@ -480,8 +484,8 @@ export function ElectiveSelectorModal({
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="mt-4 flex flex-col sm:flex-row sm:flex-wrap gap-2">
+            {/* Actions (side-by-side on mobile) */}
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap">
               <Button
                 variant="outline"
                 size="sm"
@@ -542,10 +546,10 @@ export function ElectiveSelectorModal({
                 className="flex-1 min-h-0 flex flex-col"
                 // important: allow vertical scrolling normally, we handle horizontal ourselves
                 style={{ touchAction: "pan-y" }}
-                onPointerDown={beginPointer}
-                onPointerMove={movePointer}
-                onPointerUp={endPointer}
-                onPointerCancel={cancelPointer}
+                onPointerDownCapture={beginPointer}
+                onPointerMoveCapture={movePointer}
+                onPointerUpCapture={endPointer}
+                onPointerCancelCapture={cancelPointer}
               >
                 {/* Search bar */}
                 <div
@@ -572,8 +576,10 @@ export function ElectiveSelectorModal({
 
                   <div className="mt-2 text-xs text-muted-foreground">
                     {query.trim()
-                      ? `Showing ${filteredOptions.length} match${filteredOptions.length === 1 ? "" : "es"}`
-                      : `Showing ${allOptionsForActive.length} option${allOptionsForActive.length === 1 ? "" : "s"}`}
+                      ? `Showing ${filteredOptions.length} match${filteredOptions.length === 1 ? "" : "es"
+                      }`
+                      : `Showing ${allOptionsForActive.length} option${allOptionsForActive.length === 1 ? "" : "s"
+                      }`}
                   </div>
                 </div>
 
