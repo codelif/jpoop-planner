@@ -13,6 +13,12 @@ export const slideVariants = {
   }),
 };
 
+const blurActiveTextInput = () => {
+  const el = document.activeElement;
+  if (!el) return;
+  const tag = el.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA") el.blur();
+};
 export function HorizontalSwipeMotion({
   disabled,
   onSwipeLeft,
@@ -36,7 +42,7 @@ export function HorizontalSwipeMotion({
   });
 
   const MIN_LOCK_PX = 8;
-  const LOCK_RATIO = 1.2;
+  const LOCK_RATIO = 1.05;
   const FLICK_VX = 0.75;
 
   const clampRubber = (dx, w) => {
@@ -94,12 +100,13 @@ export function HorizontalSwipeMotion({
       if (ax > ay * LOCK_RATIO) {
         ptr.current.mode = "h";
 
+        blurActiveTextInput();
         // Capture only once we know it’s horizontal
         if (!ptr.current.captured) {
           try {
             ptr.current.target?.setPointerCapture(e.pointerId);
             ptr.current.captured = true;
-          } catch {}
+          } catch { }
         }
       } else {
         // Vertical scroll: release ownership immediately

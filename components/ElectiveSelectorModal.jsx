@@ -442,12 +442,10 @@ export function ElectiveSelectorModal({
 
                         <div className="mt-2 text-xs text-muted-foreground">
                           {query.trim()
-                            ? `Showing ${filteredOptions.length} match${
-                                filteredOptions.length === 1 ? "" : "es"
-                              }`
-                            : `Showing ${allOptionsForActive.length} option${
-                                allOptionsForActive.length === 1 ? "" : "s"
-                              }`}
+                            ? `Showing ${filteredOptions.length} match${filteredOptions.length === 1 ? "" : "es"
+                            }`
+                            : `Showing ${allOptionsForActive.length} option${allOptionsForActive.length === 1 ? "" : "s"
+                            }`}
                         </div>
                       </div>
 
@@ -463,6 +461,8 @@ export function ElectiveSelectorModal({
                         style={{
                           willChange: "transform",
                           WebkitOverflowScrolling: "touch",
+                          paddingBottom:
+                            "calc(env(safe-area-inset-bottom) + 96px)",
                         }}
                       >
                         <OptionRow value={ELECTIVE_NONE} />
@@ -478,15 +478,6 @@ export function ElectiveSelectorModal({
                         )}
 
                         {/* extra space so last option never sits under the footer on mobile */}
-                        <div
-                          className="flex-1 min-h-0 overflow-auto px-4 md:px-5 py-4 space-y-2 overscroll-contain"
-                          style={{
-                            willChange: "transform",
-                            WebkitOverflowScrolling: "touch",
-                            paddingBottom:
-                              "calc(env(safe-area-inset-bottom) + 96px)",
-                          }}
-                        />
                       </div>
                     </div>
                   </HorizontalSwipeMotion>
