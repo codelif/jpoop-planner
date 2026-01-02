@@ -1,15 +1,12 @@
 import React from "react";
 import { motion, useMotionValue, animate } from "framer-motion";
-// app/lib/motion.js
+
 export const slideVariants = {
   enter: ({ direction, width }) => ({
     x: direction > 0 ? width : -width,
     opacity: 0,
   }),
-  center: {
-    x: 0,
-    opacity: 1,
-  },
+  center: { x: 0, opacity: 1 },
   exit: ({ direction, width }) => ({
     x: direction > 0 ? -width : width,
     opacity: 0,
@@ -34,14 +31,15 @@ export function HorizontalSwipeMotion({
     lastX: 0,
     lastT: 0,
     dxRaw: 0,
+    captured: false,
+    target: null,
   });
 
   const MIN_LOCK_PX = 8;
   const LOCK_RATIO = 1.2;
-  const FLICK_VX = 0.75; // px/ms (~750px/s)
+  const FLICK_VX = 0.75;
 
   const clampRubber = (dx, w) => {
-    // 1:1 until ~35% screen, then rubber-band
     const max = w * 0.35;
     if (dx > max) return max + (dx - max) * 0.2;
     if (dx < -max) return -max + (dx + max) * 0.2;
@@ -52,13 +50,13 @@ export function HorizontalSwipeMotion({
     ptr.current.id = null;
     ptr.current.mode = null;
     ptr.current.dxRaw = 0;
+    ptr.current.captured = false;
+    ptr.current.target = null;
   };
 
   const onPointerDown = (e) => {
     if (disabled) return;
     if (ptr.current.id != null) return;
-
-    // Only treat touch/pen as "touch gesture"
     if (e.pointerType !== "touch" && e.pointerType !== "pen") return;
 
     ptr.current.id = e.pointerId;
@@ -68,13 +66,12 @@ export function HorizontalSwipeMotion({
     ptr.current.lastX = e.clientX;
     ptr.current.lastT = performance.now();
     ptr.current.dxRaw = 0;
+    ptr.current.captured = false;
+    ptr.current.target = e.currentTarget;
 
     // stop any snap-back animation currently running
     x.stop?.();
-
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
+    // DO NOT capture here. Let the browser decide scroll vs gesture first.
   };
 
   const onPointerMove = (e) => {
@@ -84,26 +81,36 @@ export function HorizontalSwipeMotion({
     const dx = e.clientX - ptr.current.startX;
     const dy = e.clientY - ptr.current.startY;
 
-    // Update velocity basis
     ptr.current.lastX = e.clientX;
     ptr.current.lastT = now;
     ptr.current.dxRaw = dx;
 
-    // Decide if this gesture is horizontal or vertical (once)
     if (!ptr.current.mode) {
       const ax = Math.abs(dx);
       const ay = Math.abs(dy);
 
       if (ax < MIN_LOCK_PX && ay < MIN_LOCK_PX) return;
 
-      if (ax > ay * LOCK_RATIO) ptr.current.mode = "h";
-      else ptr.current.mode = "v";
+      if (ax > ay * LOCK_RATIO) {
+        ptr.current.mode = "h";
+
+        // Capture only once we know it’s horizontal
+        if (!ptr.current.captured) {
+          try {
+            ptr.current.target?.setPointerCapture(e.pointerId);
+            ptr.current.captured = true;
+          } catch {}
+        }
+      } else {
+        // Vertical scroll: release ownership immediately
+        ptr.current.mode = "v";
+        resetPointer();
+        return;
+      }
     }
 
-    // If horizontal, we own it: prevent default + update x (1:1)
     if (ptr.current.mode === "h") {
       if (e.cancelable) e.preventDefault();
-
       const w = window.innerWidth || 360;
       x.set(clampRubber(dx, w));
     }
@@ -128,20 +135,17 @@ export function HorizontalSwipeMotion({
     const vx = (e.clientX - ptr.current.lastX) / dt;
 
     const flick = Math.abs(vx) > FLICK_VX;
-
     const goNext = dxRaw < -threshold || (flick && vx < 0);
     const goPrev = dxRaw > threshold || (flick && vx > 0);
 
     if (goNext) {
       const handled = onSwipeLeft?.();
-      if (handled === false) {
+      if (handled === false)
         animate(x, 0, { type: "tween", duration: 0.18, ease: "easeOut" });
-      }
     } else if (goPrev) {
       const handled = onSwipeRight?.();
-      if (handled === false) {
+      if (handled === false)
         animate(x, 0, { type: "tween", duration: 0.18, ease: "easeOut" });
-      }
     } else {
       animate(x, 0, { type: "tween", duration: 0.18, ease: "easeOut" });
     }
