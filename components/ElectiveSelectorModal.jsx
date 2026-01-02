@@ -36,24 +36,6 @@ export function ElectiveSelectorModal({
   const [query, setQuery] = React.useState("");
 
   const lastActiveRef = React.useRef("");
-  const contentRef = React.useRef(null);
-
-  // --- swipe / drag refs & state (1:1 drag) ---
-  const widthRef = React.useRef(360);
-  const pointerRef = React.useRef({
-    id: null,
-    started: false,
-    mode: null, // null | "h" | "v"
-    startX: 0,
-    startY: 0,
-    lastX: 0,
-    lastY: 0,
-    startT: 0,
-    dx: 0,
-  });
-
-  const [dragX, setDragX] = React.useState(0); // px
-  const [snap, setSnap] = React.useState(false); // enables CSS transition only when snapping
 
   const safeActiveIndex = React.useMemo(() => {
     if (!hasCategories) return 0;
@@ -95,27 +77,6 @@ export function ElectiveSelectorModal({
     });
   }, [hasCategories, allOptionsForActive, query, electiveNamesByCode]);
 
-  // measure width for swipe threshold/clamp
-  React.useEffect(() => {
-    const el = contentRef.current;
-    if (!el) return;
-
-    const measure = () => {
-      const rect = el.getBoundingClientRect();
-      widthRef.current = Math.max(280, Math.floor(rect.width));
-    };
-
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-
-    window.addEventListener("orientationchange", measure);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("orientationchange", measure);
-    };
-  }, []);
-
   // When opened, init active category & reset search
   React.useEffect(() => {
     if (!open) return;
@@ -123,8 +84,6 @@ export function ElectiveSelectorModal({
     if (!hasCategories) {
       setActiveCategory("");
       setQuery("");
-      setDragX(0);
-      setSnap(false);
       return;
     }
 
@@ -135,8 +94,6 @@ export function ElectiveSelectorModal({
 
     setActiveCategory(initial);
     setQuery("");
-    setDragX(0);
-    setSnap(false);
   }, [open, hasCategories, categories]);
 
   // remember last active category
@@ -182,152 +139,26 @@ export function ElectiveSelectorModal({
     return w;
   }
 
-  const [slideDirection, setSlideDirection] = useState(0);
   const viewportW = useViewportWidth();
+  const [slideDirection, setSlideDirection] = useState(0);
+
   const goPrev = () => {
+    if (safeActiveIndex === 0) return false;
     setSlideDirection(-1);
     goToCategory(safeActiveIndex - 1);
+    return true;
   };
+
   const goNext = () => {
+    if (safeActiveIndex === categories.length - 1) return false;
     setSlideDirection(1);
     goToCategory(safeActiveIndex + 1);
+    return true;
   };
 
   const hideAll = () => {
     if (!hasCategories) return;
     for (const cat of categories) setValue(cat, ELECTIVE_NONE);
-  };
-
-  // --------- 1:1 swipe mechanics (pointer events) ----------
-  const clampDrag = (dx) => {
-    const w = widthRef.current || 360;
-    // rubber-band clamp: allow ~30% of width max to keep it feeling tight
-    const max = Math.floor(w * 0.32);
-    if (dx > max) return max + (dx - max) * 0.15;
-    if (dx < -max) return -max + (dx + max) * 0.15;
-    return dx;
-  };
-
-  const beginPointer = (e) => {
-    // only for primary pointer
-    if (pointerRef.current.id != null) return;
-
-    pointerRef.current.id = e.pointerId;
-    pointerRef.current.started = true;
-    pointerRef.current.mode = null;
-    pointerRef.current.startX = e.clientX;
-    pointerRef.current.startY = e.clientY;
-    pointerRef.current.lastX = e.clientX;
-    pointerRef.current.lastY = e.clientY;
-    pointerRef.current.startT = Date.now();
-    pointerRef.current.dx = 0;
-
-    setSnap(false);
-    // capture so we keep getting events even if finger leaves element
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
-  };
-
-  const movePointer = (e) => {
-    if (pointerRef.current.id !== e.pointerId) return;
-
-    const pr = pointerRef.current;
-    const dx = e.clientX - pr.startX;
-    const dy = e.clientY - pr.startY;
-
-    pr.lastX = e.clientX;
-    pr.lastY = e.clientY;
-    pr.dx = dx;
-
-    // decide gesture direction once (more forgiving; avoids "v" too early)
-    if (!pr.mode) {
-      const ax = Math.abs(dx);
-      const ay = Math.abs(dy);
-
-      // small slop: don't decide yet
-      if (ax < 6 && ay < 6) return;
-
-      // bias toward horizontal; only lock vertical when it's very clearly vertical
-      if (ax > ay + 4) pr.mode = "h";
-      else if (ay > ax + 10) pr.mode = "v";
-      else return; // still undecided
-    }
-
-    if (pr.mode === "h") {
-      // prevent horizontal page swipe/back gestures / native scroll
-      if (e.cancelable) e.preventDefault();
-      setDragX(clampDrag(dx)); // 1:1 (with slight rubber-band at extremes)
-    }
-  };
-
-  const endPointer = (e) => {
-    if (pointerRef.current.id !== e.pointerId) return;
-
-    const pr = pointerRef.current;
-    const mode = pr.mode;
-
-    const w = widthRef.current || 360;
-    const dt = Math.max(1, Date.now() - pr.startT);
-    const dx = pr.dx;
-    const vx = dx / dt; // px/ms
-
-    // reset pointer
-    pointerRef.current.id = null;
-    pointerRef.current.started = false;
-    pr.mode = null;
-
-    // if it wasn't a horizontal swipe gesture, do nothing (no bounce)
-    if (mode !== "h") return;
-
-    const canPrev = safeActiveIndex > 0;
-    const canNext = safeActiveIndex < categories.length - 1;
-
-    const threshold = Math.floor(w * 0.22);
-    const fast = Math.abs(vx) > 0.75; // quick flick
-
-    const wantNext = (dx < -threshold || (fast && vx < 0)) && canNext;
-    const wantPrev = (dx > threshold || (fast && vx > 0)) && canPrev;
-
-    if (!wantNext && !wantPrev) {
-      // snap back
-      setSnap(true);
-      setDragX(0);
-      // disable transition after it completes so next drag is raw
-      window.setTimeout(() => setSnap(false), 220);
-      return;
-    }
-
-    // slide out fully, then switch, then snap back to 0 without transition
-    setSnap(true);
-    setDragX(wantNext ? -w : w);
-
-    window.setTimeout(() => {
-      // after slide-out, update category and reset position instantly
-      if (wantNext) goNext();
-      else goPrev();
-
-      // jump back to center without transition
-      setSnap(false);
-      setDragX(0);
-    }, 190);
-  };
-
-  const cancelPointer = (e) => {
-    if (pointerRef.current.id !== e.pointerId) return;
-
-    const wasHorizontal = pointerRef.current.mode === "h";
-
-    pointerRef.current.id = null;
-    pointerRef.current.started = false;
-    pointerRef.current.mode = null;
-
-    // Only snap if we were actually doing a horizontal swipe (prevents "bounce" on scroll cancel)
-    if (!wasHorizontal) return;
-
-    setSnap(true);
-    setDragX(0);
-    window.setTimeout(() => setSnap(false), 180);
   };
 
   const OptionRow = ({ value }) => {
@@ -570,7 +401,7 @@ export function ElectiveSelectorModal({
                 mode="sync"
               >
                 <HorizontalSwipeMotion
-                  key={safeActiveIndex}
+                  key={safeActiveCategory}
                   // disabled={showSkeleton || tableMode}
                   custom={{ direction: slideDirection, width: viewportW }}
                   variants={slideVariants}
@@ -581,20 +412,15 @@ export function ElectiveSelectorModal({
                     x: { type: "tween", duration: 0.3, ease: "easeInOut" },
                     opacity: { duration: 0.2 },
                   }}
-                  onSwipeLeft={() => goNext()}
-                  onSwipeRight={() => goPrev()}
+                  onSwipeLeft={goNext}
+                  onSwipeRight={goPrev}
                 >
                   {/* Swipe + Search + List wrapper */}
-                  <div
-                    ref={contentRef}
-                    className="flex-1 min-h-0 flex flex-col"
-                  >
+                  <div className="flex-1 min-h-0 flex flex-col">
                     {/* Search bar */}
                     <div
                       className="px-4 md:px-5 pt-4 md:pt-4 shrink-0"
                       style={{
-                        transform: `translateX(${dragX}px)`,
-                        transition: snap ? "transform 200ms ease-out" : "none",
                         willChange: "transform",
                       }}
                     >
@@ -633,8 +459,6 @@ export function ElectiveSelectorModal({
                       role="radiogroup"
                       aria-label={`Options for ${safeActiveCategory}`}
                       style={{
-                        transform: `translateX(${dragX}px)`,
-                        transition: snap ? "transform 200ms ease-out" : "none",
                         willChange: "transform",
                         WebkitOverflowScrolling: "touch",
                       }}

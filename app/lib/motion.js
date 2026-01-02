@@ -115,7 +115,6 @@ export function HorizontalSwipeMotion({
     const mode = ptr.current.mode;
     const dxRaw = ptr.current.dxRaw;
 
-    // If it wasn't horizontal, do nothing (let scroll be scroll)
     if (mode !== "h") {
       resetPointer();
       return;
@@ -124,7 +123,6 @@ export function HorizontalSwipeMotion({
     const w = window.innerWidth || 360;
     const threshold = w * 0.22;
 
-    // Approximate release velocity using last segment
     const now = performance.now();
     const dt = Math.max(1, now - ptr.current.lastT);
     const vx = (e.clientX - ptr.current.lastX) / dt;
@@ -135,10 +133,15 @@ export function HorizontalSwipeMotion({
     const goPrev = dxRaw > threshold || (flick && vx > 0);
 
     if (goNext) {
-      onSwipeLeft?.();
-      // do NOT snap x back — exit variant will take over
+      const handled = onSwipeLeft?.();
+      if (handled === false) {
+        animate(x, 0, { type: "tween", duration: 0.18, ease: "easeOut" });
+      }
     } else if (goPrev) {
-      onSwipeRight?.();
+      const handled = onSwipeRight?.();
+      if (handled === false) {
+        animate(x, 0, { type: "tween", duration: 0.18, ease: "easeOut" });
+      }
     } else {
       animate(x, 0, { type: "tween", duration: 0.18, ease: "easeOut" });
     }
