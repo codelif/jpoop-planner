@@ -173,7 +173,7 @@ export function ElectiveSelectorModal({
           if (!hasCategories) return;
           setValue(safeActiveCategory, value);
         }}
-        style={{ touchAction: "pan-y"}}
+        style={{ touchAction: "pan-y" }}
         className={[
           "w-full text-left rounded-xl border transition-colors",
           "px-4 py-3 min-h-[56px]",
@@ -443,10 +443,12 @@ export function ElectiveSelectorModal({
 
                         <div className="mt-2 text-xs text-muted-foreground">
                           {query.trim()
-                            ? `Showing ${filteredOptions.length} match${filteredOptions.length === 1 ? "" : "es"
-                            }`
-                            : `Showing ${allOptionsForActive.length} option${allOptionsForActive.length === 1 ? "" : "s"
-                            }`}
+                            ? `Showing ${filteredOptions.length} match${
+                                filteredOptions.length === 1 ? "" : "es"
+                              }`
+                            : `Showing ${allOptionsForActive.length} option${
+                                allOptionsForActive.length === 1 ? "" : "s"
+                              }`}
                         </div>
                       </div>
 

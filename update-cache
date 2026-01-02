@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOTDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+
+SW_FILE="$ROOTDIR/public/sw.js"
+PAGE_FILE="$ROOTDIR/app/page.js"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  update-cache [-c]
+
+Options:
+  -c  git add -A and commit (only if there are staged changes)
+EOF
+}
+
+DO_PAGE=true
+DO_COMMIT=false
+
+while getopts ":dch" opt; do
+  case "$opt" in
+    c) DO_COMMIT=true ;;
+    h) usage; exit 0 ;;
+    \?) echo "Unknown option: -$OPTARG" >&2; usage; exit 2 ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+# Single source of truth for the version string
+VERSION="jiit-planner-v$(date +%Y.%m.%d_%H.%M.%S)"
+
+# Cross-platform sed -i helper (GNU vs BSD/macOS)
+sed_inplace() {
+  local expr="$1"
+  local file="$2"
+
+  if sed --version >/dev/null 2>&1; then
+    sed -i -E "$expr" "$file"      # GNU sed
+  else
+    sed -i '' -E "$expr" "$file"   # BSD sed (macOS)
+  fi
+}
+
+[[ -f "$SW_FILE" ]] || { echo "Missing: $SW_FILE" >&2; exit 1; }
+
+sed_inplace \
+  "s/^([[:space:]]*const[[:space:]]+CACHE_NAME[[:space:]]*=[[:space:]]*)([\"'])jiit-planner-v[^\"']*\\2/\\1\\2${VERSION}\\2/" \
+  "$SW_FILE"
+
+if ! grep -qF "$VERSION" "$SW_FILE"; then
+  echo "Warning: didn't find an updated CACHE_NAME in $SW_FILE (pattern may not match your file)." >&2
+fi
+
+[[ -f "$PAGE_FILE" ]] || { echo "Missing: $PAGE_FILE" >&2; exit 1; }
+
+sed_inplace \
+  "s/^([[:space:]]*const[[:space:]]+appVersion[[:space:]]*=[[:space:]]*)([\"'])jiit-planner-v[^\"']*\\2/\\1\\2${VERSION}\\2/" \
+  "$PAGE_FILE"
+
+if ! grep -qF "$VERSION" "$PAGE_FILE"; then
+  echo "Warning: didn't find an updated appVersion in $PAGE_FILE (pattern may not match your file)." >&2
+fi
+
+if $DO_COMMIT; then
+  git -C "$ROOTDIR" add -A
+
+  if git -C "$ROOTDIR" diff --cached --quiet; then
+    echo "No changes to commit."
+  else
+    git -C "$ROOTDIR" commit -m "chore: update sw cache (${VERSION})"
+  fi
+fi
+
+echo "Updated cache version: $VERSION"
+$DO_PAGE && echo "Also updated: $PAGE_FILE"

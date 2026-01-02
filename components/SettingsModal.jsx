@@ -72,7 +72,21 @@ export function SettingsModal({
   onOpenComparison,
 }) {
   const [open, setOpen] = React.useState(false);
+  const [appVersion, setAppVersion] = React.useState(null);
 
+  React.useEffect(() => {
+    const raw = localStorage.getItem("app-version");
+    if (!raw) return;
+
+    const match = raw.match(/v(\d{4}\.\d{2}\.\d{2})_(\d{2})\.(\d{2})\.(\d{2})/);
+    if (!match) {
+      setAppVersion(raw);
+      return;
+    }
+
+    const [, date, hh, mm, ss] = match;
+    setAppVersion(`Version: ${date} • ${hh}:${mm}:${ss}`);
+  }, []);
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
@@ -167,6 +181,12 @@ export function SettingsModal({
               <span className="sr-only">Close</span>
             </Button>
           </Dialog.Close>
+
+          {appVersion && (
+            <div className="mt-6 text-center text-xs text-muted-foreground select-none">
+              {appVersion}
+            </div>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

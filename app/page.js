@@ -97,14 +97,19 @@ export default function Page() {
   const [showComparison, setShowComparison] = React.useState(false);
 
   React.useEffect(() => {
-    const currentVersion = "jiit-planner-cache-v2025-08-10_00-57-55";
-    const storedVersion = localStorage.getItem("app-version");
+    // so 2 different version strings:
+    // appVersion: for label; updated by script; same as service worker
+    // clearVersion: used for nuking the localStorage; updated manually; if localStorage is corrupted irrepairably
+    const appVersion = "jiit-planner-v2026.01.02_20.57.10";
+    const clearVersion = "v2026.01.02";
+    const storedClearVersion = localStorage.getItem("clear-version");
 
-    if (!storedVersion || storedVersion !== currentVersion) {
+    if (!storedClearVersion || storedClearVersion !== clearVersion) {
       localStorage.clear();
     }
 
-    localStorage.setItem("app-version", currentVersion);
+    localStorage.setItem("app-version", appVersion);
+    localStorage.setItem("clear-version", clearVersion);
   }, []);
 
   React.useEffect(() => {

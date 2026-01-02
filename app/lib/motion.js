@@ -77,7 +77,7 @@ export function HorizontalSwipeMotion({
     if (ptr.current.id != null) return;
     if (e.pointerType !== "touch" && e.pointerType !== "pen") return;
 
-    blurActiveTextInputIfOutside(e.target)
+    blurActiveTextInputIfOutside(e.target);
     ptr.current.id = e.pointerId;
     ptr.current.mode = null;
     ptr.current.startX = e.clientX;
@@ -119,7 +119,7 @@ export function HorizontalSwipeMotion({
           try {
             ptr.current.target?.setPointerCapture(e.pointerId);
             ptr.current.captured = true;
-          } catch { }
+          } catch {}
         }
       } else {
         // Vertical scroll: release ownership immediately
