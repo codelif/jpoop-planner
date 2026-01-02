@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   X,
@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ELECTIVE_NONE } from "@/app/lib/electives";
+import { slideVariants, HorizontalSwipeMotion } from "@/app/lib/motion";
+import { AnimatePresence } from "framer-motion";
 
 export function ElectiveSelectorModal({
   open,
@@ -166,8 +168,30 @@ export function ElectiveSelectorModal({
     setQuery("");
   };
 
-  const goPrev = () => goToCategory(safeActiveIndex - 1);
-  const goNext = () => goToCategory(safeActiveIndex + 1);
+  function useViewportWidth() {
+    const [w, setW] = React.useState(() =>
+      typeof window !== "undefined" ? window.innerWidth : 360,
+    );
+
+    React.useEffect(() => {
+      const onResize = () => setW(window.innerWidth);
+      window.addEventListener("resize", onResize, { passive: true });
+      return () => window.removeEventListener("resize", onResize);
+    }, []);
+
+    return w;
+  }
+
+  const [slideDirection, setSlideDirection] = useState(0);
+  const viewportW = useViewportWidth();
+  const goPrev = () => {
+    setSlideDirection(-1);
+    goToCategory(safeActiveIndex - 1);
+  };
+  const goNext = () => {
+    setSlideDirection(1);
+    goToCategory(safeActiveIndex + 1);
+  };
 
   const hideAll = () => {
     if (!hasCategories) return;
@@ -202,7 +226,7 @@ export function ElectiveSelectorModal({
     // capture so we keep getting events even if finger leaves element
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
-    } catch { }
+    } catch {}
   };
 
   const movePointer = (e) => {
@@ -540,81 +564,99 @@ export function ElectiveSelectorModal({
                 </div>
               </div>
 
-              {/* Swipe + Search + List wrapper */}
-              <div
-                ref={contentRef}
-                className="flex-1 min-h-0 flex flex-col"
-                // important: allow vertical scrolling normally, we handle horizontal ourselves
-                style={{ touchAction: "pan-y" }}
-                onPointerDownCapture={beginPointer}
-                onPointerMoveCapture={movePointer}
-                onPointerUpCapture={endPointer}
-                onPointerCancelCapture={cancelPointer}
+              <AnimatePresence
+                initial={false}
+                custom={{ direction: slideDirection, width: viewportW }}
+                mode="sync"
               >
-                {/* Search bar */}
-                <div
-                  className="px-4 md:px-5 pt-4 md:pt-4 shrink-0"
-                  style={{
-                    transform: `translateX(${dragX}px)`,
-                    transition: snap ? "transform 200ms ease-out" : "none",
-                    willChange: "transform",
+                <HorizontalSwipeMotion
+                  key={safeActiveIndex}
+                  // disabled={showSkeleton || tableMode}
+                  custom={{ direction: slideDirection, width: viewportW }}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{
+                    x: { type: "tween", duration: 0.3, ease: "easeInOut" },
+                    opacity: { duration: 0.2 },
                   }}
+                  onSwipeLeft={() => goNext()}
+                  onSwipeRight={() => goPrev()}
                 >
-                  <div className="relative">
-                    <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Search by code or name"
-                      inputMode="search"
-                      className={[
-                        "w-full h-11 rounded-xl border border-input bg-background pl-9 pr-3 text-sm",
-                        "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                      ].join(" ")}
-                    />
-                  </div>
+                  {/* Swipe + Search + List wrapper */}
+                  <div
+                    ref={contentRef}
+                    className="flex-1 min-h-0 flex flex-col"
+                  >
+                    {/* Search bar */}
+                    <div
+                      className="px-4 md:px-5 pt-4 md:pt-4 shrink-0"
+                      style={{
+                        transform: `translateX(${dragX}px)`,
+                        transition: snap ? "transform 200ms ease-out" : "none",
+                        willChange: "transform",
+                      }}
+                    >
+                      <div className="relative">
+                        <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          value={query}
+                          onChange={(e) => setQuery(e.target.value)}
+                          placeholder="Search by code or name"
+                          inputMode="search"
+                          className={[
+                            "w-full h-11 rounded-xl border border-input bg-background pl-9 pr-3 text-sm",
+                            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                          ].join(" ")}
+                        />
+                      </div>
 
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    {query.trim()
-                      ? `Showing ${filteredOptions.length} match${filteredOptions.length === 1 ? "" : "es"
-                      }`
-                      : `Showing ${allOptionsForActive.length} option${allOptionsForActive.length === 1 ? "" : "s"
-                      }`}
-                  </div>
-                </div>
-
-                {/* List (always visible on mobile, scrolls properly) */}
-                <div
-                  className={[
-                    "flex-1 min-h-0 overflow-auto",
-                    "px-4 md:px-5 py-4 space-y-2",
-                    "overscroll-contain",
-                  ].join(" ")}
-                  role="radiogroup"
-                  aria-label={`Options for ${safeActiveCategory}`}
-                  style={{
-                    transform: `translateX(${dragX}px)`,
-                    transition: snap ? "transform 200ms ease-out" : "none",
-                    willChange: "transform",
-                    WebkitOverflowScrolling: "touch",
-                  }}
-                >
-                  <OptionRow value={ELECTIVE_NONE} />
-
-                  {filteredOptions.length === 0 ? (
-                    <div className="mt-2 rounded-xl border border-border bg-background/40 p-4 text-sm text-muted-foreground">
-                      No results. Try a different search.
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        {query.trim()
+                          ? `Showing ${filteredOptions.length} match${
+                              filteredOptions.length === 1 ? "" : "es"
+                            }`
+                          : `Showing ${allOptionsForActive.length} option${
+                              allOptionsForActive.length === 1 ? "" : "s"
+                            }`}
+                      </div>
                     </div>
-                  ) : (
-                    filteredOptions.map((code) => (
-                      <OptionRow key={code} value={code} />
-                    ))
-                  )}
 
-                  {/* extra space so last option never sits under the footer on mobile */}
-                  <div className="h-[calc(env(safe-area-inset-bottom)+96px)] md:h-6" />
-                </div>
-              </div>
+                    {/* List (always visible on mobile, scrolls properly) */}
+                    <div
+                      className={[
+                        "flex-1 min-h-0 overflow-auto",
+                        "px-4 md:px-5 py-4 space-y-2",
+                        "overscroll-contain",
+                      ].join(" ")}
+                      role="radiogroup"
+                      aria-label={`Options for ${safeActiveCategory}`}
+                      style={{
+                        transform: `translateX(${dragX}px)`,
+                        transition: snap ? "transform 200ms ease-out" : "none",
+                        willChange: "transform",
+                        WebkitOverflowScrolling: "touch",
+                      }}
+                    >
+                      <OptionRow value={ELECTIVE_NONE} />
+
+                      {filteredOptions.length === 0 ? (
+                        <div className="mt-2 rounded-xl border border-border bg-background/40 p-4 text-sm text-muted-foreground">
+                          No results. Try a different search.
+                        </div>
+                      ) : (
+                        filteredOptions.map((code) => (
+                          <OptionRow key={code} value={code} />
+                        ))
+                      )}
+
+                      {/* extra space so last option never sits under the footer on mobile */}
+                      <div className="h-[calc(env(safe-area-inset-bottom)+96px)] md:h-6" />
+                    </div>
+                  </div>
+                </HorizontalSwipeMotion>
+              </AnimatePresence>
             </div>
           </div>
 
