@@ -108,8 +108,9 @@ function FilterCombobox({
             aria-expanded={open}
             className={cn(
               "w-full justify-between h-11 px-3 rounded-xl",
+              "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:ring-offset-0",
               disabled && "opacity-60",
-              open && "ring-2 ring-ring ring-offset-2 ring-offset-background",
+              open && "ring-2 ring-inset ring-ring",
             )}
           >
             <span

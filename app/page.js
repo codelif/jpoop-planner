@@ -100,7 +100,7 @@ export default function Page() {
     // so 2 different version strings:
     // appVersion: for label; updated by script; same as service worker
     // clearVersion: used for nuking the localStorage; updated manually; if localStorage is corrupted irrepairably
-    const appVersion = "jiit-planner-v2026.01.03_01.29.16";
+    const appVersion = "jiit-planner-v2026.01.03_01.35.58";
     const clearVersion = "v2026.01.02";
     const storedClearVersion = localStorage.getItem("clear-version");
 
