@@ -100,7 +100,7 @@ export default function Page() {
     // so 2 different version strings:
     // appVersion: for label; updated by script; same as service worker
     // clearVersion: used for nuking the localStorage; updated manually; if localStorage is corrupted irrepairably
-    const appVersion = "jiit-planner-v2026.01.02_20.57.10";
+    const appVersion = "jiit-planner-v2026.01.02_21.54.34";
     const clearVersion = "v2026.01.02";
     const storedClearVersion = localStorage.getItem("clear-version");
 
@@ -266,7 +266,7 @@ export default function Page() {
         <AnimatePresence
           initial={false}
           custom={{ direction: slideDirection, width: viewportW }}
-          mode="sync"
+          mode="wait"
         >
           <HorizontalSwipeMotion
             key={day}
