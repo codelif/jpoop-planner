@@ -12,7 +12,19 @@ export const slideVariants = {
     opacity: 0,
   }),
 };
+const blurActiveTextInputIfOutside = (eventTarget) => {
+  const el = document.activeElement;
+  if (!el) return;
+  const tag = el.tagName;
+  const isTextInput = tag === "INPUT" || tag === "TEXTAREA";
+  if (!isTextInput) return;
 
+  // If you touched the currently focused input (or inside it), don't blur.
+  // Otherwise blur immediately so Chrome doesn't enter weird gesture modes.
+  if (eventTarget && el.contains?.(eventTarget)) return;
+
+  el.blur();
+};
 const blurActiveTextInput = () => {
   const el = document.activeElement;
   if (!el) return;
@@ -65,6 +77,7 @@ export function HorizontalSwipeMotion({
     if (ptr.current.id != null) return;
     if (e.pointerType !== "touch" && e.pointerType !== "pen") return;
 
+    blurActiveTextInputIfOutside(e.target)
     ptr.current.id = e.pointerId;
     ptr.current.mode = null;
     ptr.current.startX = e.clientX;

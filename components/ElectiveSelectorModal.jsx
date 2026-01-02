@@ -173,6 +173,7 @@ export function ElectiveSelectorModal({
           if (!hasCategories) return;
           setValue(safeActiveCategory, value);
         }}
+        style={{ touchAction: "pan-y"}}
         className={[
           "w-full text-left rounded-xl border transition-colors",
           "px-4 py-3 min-h-[56px]",
@@ -463,6 +464,7 @@ export function ElectiveSelectorModal({
                           WebkitOverflowScrolling: "touch",
                           paddingBottom:
                             "calc(env(safe-area-inset-bottom) + 96px)",
+                          touchAction: "pan-y",
                         }}
                       >
                         <OptionRow value={ELECTIVE_NONE} />
