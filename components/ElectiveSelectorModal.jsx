@@ -267,7 +267,7 @@ export function ElectiveSelectorModal({
             "md:left-1/2 md:top-1/2 md:bottom-auto md:right-auto",
             "md:-translate-x-1/2 md:-translate-y-1/2",
             "md:w-[min(980px,calc(100vw-32px))]",
-            "md:h-auto md:max-h-[min(85vh,860px)]",
+            "md:h-[min(92vh,980px)] md:max-h-[min(92vh,980px)]",
             "md:rounded-2xl",
           ].join(" ")}
         >
@@ -276,31 +276,27 @@ export function ElectiveSelectorModal({
             className={[
               "shrink-0 bg-popover/85 backdrop-blur-sm border-b border-border",
               "px-4 md:px-5",
-              "pt-[calc(env(safe-area-inset-top)+14px)] md:pt-4 pb-4",
+              "pt-[calc(env(safe-area-inset-top)+10px)] md:pt-3 pb-2",
             ].join(" ")}
           >
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <Dialog.Title className="text-lg font-bold text-foreground">
                   Choose electives
                 </Dialog.Title>
-                <Dialog.Description className="text-sm text-muted-foreground mt-1">
-                  Category {safeActiveIndex + 1} of {categories.length} •{" "}
-                  {selectedCount} selected
-                </Dialog.Description>
               </div>
 
               <button
                 type="button"
                 onClick={() => onOpenChange?.(false)}
                 className={[
-                  "h-10 w-10 rounded-full border border-border shrink-0",
+                  "h-8 w-8 rounded-full border border-border shrink-0",
                   "inline-flex items-center justify-center bg-background hover:bg-accent transition-colors",
                   "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
                 ].join(" ")}
                 aria-label="Close"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
 
@@ -310,7 +306,7 @@ export function ElectiveSelectorModal({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-10 px-3"
+                  className="h-9 px-3"
                   onClick={goPrev}
                   disabled={safeActiveIndex === 0}
                 >
@@ -322,7 +318,7 @@ export function ElectiveSelectorModal({
                   <div className="text-sm font-semibold text-foreground break-words">
                     {safeActiveCategory}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
+                  <div className="text-xs text-muted-foreground mt-0.5 hidden xs:block">
                     Drag the options left/right to change category
                   </div>
                 </div>
@@ -338,26 +334,6 @@ export function ElectiveSelectorModal({
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
-
-            {/* Actions (side-by-side on mobile) */}
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-10 w-full sm:w-auto"
-                onClick={hideAll}
-              >
-                Hide all electives
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-10 w-full sm:w-auto"
-                onClick={() => setQuery("")}
-              >
-                Clear search
-              </Button>
             </div>
           </div>
 
@@ -380,12 +356,15 @@ export function ElectiveSelectorModal({
             {/* Options panel */}
             <div className="flex-1 min-w-0 flex flex-col min-h-0">
               {/* Desktop title row */}
-              <div className="hidden md:block px-5 pt-5 shrink-0">
-                <div className="text-lg font-bold text-foreground break-words">
-                  {safeActiveCategory}
+              <div className="hidden md:flex px-5 pt-5 shrink-0 items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="text-lg font-bold text-foreground break-words">
+                    {safeActiveCategory}
+                  </div>
                 </div>
-                <div className="text-sm text-muted-foreground mt-1 break-words">
-                  Selected:{" "}
+
+                <div className="shrink-0 text-sm text-muted-foreground text-right">
+                  <span>Selected: </span>
                   <span className="font-medium text-foreground">
                     {currentValue === ELECTIVE_NONE
                       ? "None"
@@ -422,26 +401,49 @@ export function ElectiveSelectorModal({
                     <div className="flex-1 min-h-0 flex flex-col">
                       {/* Search bar */}
                       <div
-                        className="px-4 md:px-5 pt-4 md:pt-4 shrink-0"
+                        className="px-4 md:px-5 pt-3 md:pt-1 shrink-0"
                         style={{
                           willChange: "transform",
                         }}
                       >
                         <div className="relative">
                           <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+
                           <input
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="Search by code or name"
                             inputMode="search"
                             className={[
-                              "w-full h-11 rounded-xl border border-input bg-background pl-9 pr-3 text-sm",
+                              "w-full h-11 rounded-xl border border-input bg-background pl-9 pr-10 text-sm",
                               "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
                             ].join(" ")}
                           />
+
+                          {query.trim().length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setQuery("");
+                              }}
+                              className={[
+                                "absolute right-2 top-1/2 -translate-y-1/2",
+                                "h-8 w-8 rounded-lg border border-border",
+                                "inline-flex items-center justify-center",
+                                "bg-background hover:bg-accent transition-colors",
+                                "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                              ].join(" ")}
+                              aria-label="Clear search"
+                              title="Clear search"
+                            >
+                              <X className="h-4 w-4 text-muted-foreground" />
+                            </button>
+                          ) : null}
                         </div>
 
-                        <div className="mt-2 text-xs text-muted-foreground">
+                        <div className="mt-1 h-5 flex items-center text-xs text-muted-foreground">
                           {query.trim()
                             ? `Showing ${filteredOptions.length} match${
                                 filteredOptions.length === 1 ? "" : "es"
@@ -465,7 +467,7 @@ export function ElectiveSelectorModal({
                           willChange: "transform",
                           WebkitOverflowScrolling: "touch",
                           paddingBottom:
-                            "calc(env(safe-area-inset-bottom) + 96px)",
+                            "calc(env(safe-area-inset-bottom) + 20px)",
                           touchAction: "pan-y",
                         }}
                       >
@@ -494,23 +496,37 @@ export function ElectiveSelectorModal({
           <div
             className={[
               "shrink-0 bg-popover/85 backdrop-blur-sm border-t border-border",
-              "px-4 md:px-5 py-4",
-              "pb-[calc(env(safe-area-inset-bottom)+14px)] md:pb-4",
-              "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3",
+              "px-4 md:px-5 py-3",
+              "pb-[calc(env(safe-area-inset-bottom)+10px)] md:pb-3",
             ].join(" ")}
           >
-            <div className="text-xs text-muted-foreground">
-              Picks are saved instantly. Use None to hide electives in a
-              category.
-            </div>
+            <div className="grid grid-cols-3 items-center gap-3">
+              {/* Left */}
+              <div className="justify-self-start">
+                <Button
+                  variant="outline"
+                  onClick={hideAll}
+                  className="h-10 sm:h-9"
+                >
+                  Hide all
+                </Button>
+              </div>
 
-            <Button
-              variant="outline"
-              className="h-11 sm:h-9 w-full sm:w-auto"
-              onClick={() => onOpenChange?.(false)}
-            >
-              Done
-            </Button>
+              {/* Middle */}
+              <div className="text-center text-xs sm:text-sm text-muted-foreground whitespace-nowrap truncate md:invisible md:pointer-events-none">
+                {safeActiveIndex + 1} of {categories.length}
+              </div>
+
+              {/* Right */}
+              <div className="justify-self-end">
+                <Button
+                  className="h-10 sm:h-9"
+                  onClick={() => onOpenChange?.(false)}
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

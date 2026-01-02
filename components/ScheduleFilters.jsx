@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-
+import { Badge } from "@/components/ui/badge";
 /**
  * ScheduleFilters
  */
@@ -43,20 +43,21 @@ export function ScheduleFilters({
     <div className="bg-background/80 backdrop-blur-sm mb-4">
       {/* Top bar */}
       <div className="flex items-center pl-[10px] justify-between mb-4">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          {!hideDayFilter && (
-            <>
-              <span className="font-medium">{day}</span>
-              <span>•</span>
-            </>
-          )}
-          {batch && <span className="font-medium">{batch.toUpperCase()}</span>}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="text-sm font-semibold truncate">
+            {!hideDayFilter ? day : "Filters"}
+          </div>
+          {batch ? (
+            <Badge variant="secondary" className="shrink-0">
+              {batch.toUpperCase()}
+            </Badge>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-2">
           {showElectivesButton && (
             <Button variant="outline" onClick={() => onOpenElectives?.()}>
-              Select electives
+              Electives
             </Button>
           )}
 
