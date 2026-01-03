@@ -10,6 +10,7 @@ import {
   FlaskConical,
   Tag,
 } from "lucide-react";
+import { formatBatchRanges } from "@/app/lib/format-batches";
 
 /**
  * ScheduleCard - Renders details for a single class item.
@@ -63,7 +64,10 @@ export function ScheduleCard({ item, timeActive }) {
           <User className="h-4 w-4" /> {item.teacher}
         </div>
         <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-accent text-sm text-accent-foreground">
-          <Users className="h-4 w-4" /> {item.batches.join(", ")}
+          <Users className="h-4 w-4" />{" "}
+          {item.is_elective
+            ? formatBatchRanges(item.batches)
+            : item.batches.join(", ")}
         </div>
         <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-accent text-sm text-accent-foreground">
           <MapPin className="h-4 w-4" /> {item.venue}
