@@ -500,7 +500,6 @@ export function useSchedule() {
   // NEW: Build filtered day/week view whenever raw data OR elective selection OR day changes
   React.useEffect(() => {
     const rawWeek = rawAllDaysClasses || {};
-
     // 1) Apply electives filtering
     const filteredWeek = filterWeekByElectives(
       rawWeek,

@@ -53,7 +53,7 @@ export function hasAnyElectiveSelected(selection = {}) {
 export function filterClassItemByElectives(item, selectedByCategory = {}) {
   if (!item?.is_elective) return true;
 
-  const code = item.subjectcode || item.subject;
+  const code = item.subject || item.subjectcode;
   if (!code) return false;
 
   const category = item.category;
