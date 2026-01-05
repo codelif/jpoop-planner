@@ -16,6 +16,7 @@ import { NoScheduleResults } from "@/components/NoScheduleResults";
 import { TimetableComparison } from "@/components/TimetableComparison";
 import { slideVariants, HorizontalSwipeMotion } from "@/app/lib/motion";
 import { ScheduleTableView } from "@/components/ScheduleTableView";
+import { ExportToGCal } from "@/components/ExportToGCal";
 
 // NEW
 import { ElectiveSelectorModal } from "@/components/ElectiveSelectorModal";
@@ -32,7 +33,7 @@ const daysOfWeek = [
 
 function useViewportWidth() {
   const [w, setW] = React.useState(() =>
-    typeof window !== "undefined" ? window.innerWidth : 360,
+    typeof window !== "undefined" ? window.innerWidth : 360
   );
 
   React.useEffect(() => {
@@ -326,6 +327,12 @@ export default function Page() {
                       </div>
                     </div>
                   )}
+                  <div className="sticky top-20">
+                    <ExportToGCal
+                      allDayClasses={allDaysClasses}
+                      batch={batch}
+                    />
+                  </div>
                 </div>
               )}
             </div>
