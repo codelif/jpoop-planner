@@ -1,2 +1,5 @@
 Flask==3.0.3
 requests
+google-auth
+google-auth-oauthlib
+google-api-python-client
