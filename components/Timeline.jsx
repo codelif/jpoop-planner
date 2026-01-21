@@ -15,6 +15,7 @@ export function Timeline({ timelineItems, uniqueTimes, cardRefs }) {
     dotPosition,
     lineHeight,
     isTimeWithinActiveCard,
+    isNearLabel,
   } = useTimeline(timelineItems, cardRefs);
 
   return (
@@ -25,11 +26,23 @@ export function Timeline({ timelineItems, uniqueTimes, cardRefs }) {
         style={{ height: lineHeight }}
       >
         <div
-          className="absolute w-4 h-4 rounded-full bg-primary shadow"
+          className="absolute w-4 h-4 rounded-full bg-primary shadow hidden md:block"
           style={{
             left: "50%",
             transform: "translateX(-50%)",
             top: dotPosition,
+          }}
+        ></div>
+        <div
+          className="absolute w-4 h-4 rounded-full md:hidden" // hacky but cmon
+          style={{
+            left: "50%",
+            transform: "translateX(-50%)",
+            top: dotPosition,
+            zIndex: 69,
+            backgroundColor: isNearLabel ? "transparent" : "hsl(var(--primary))",
+            border: "2px solid hsl(var(--primary))",
+            transition: "background-color 0.15s, box-shadow 0.15s",
           }}
         ></div>
 
