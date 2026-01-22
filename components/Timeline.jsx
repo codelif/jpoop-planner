@@ -15,7 +15,6 @@ export function Timeline({ timelineItems, uniqueTimes, cardRefs }) {
     dotPosition,
     lineHeight,
     isTimeWithinActiveCard,
-    isNearLabel,
   } = useTimeline(timelineItems, cardRefs);
 
   return (
@@ -26,23 +25,11 @@ export function Timeline({ timelineItems, uniqueTimes, cardRefs }) {
         style={{ height: lineHeight }}
       >
         <div
-          className="absolute w-4 h-4 rounded-full bg-primary shadow hidden md:block"
+          className="absolute w-4 h-4 rounded-full bg-primary shadow"
           style={{
             left: "50%",
             transform: "translateX(-50%)",
             top: dotPosition,
-          }}
-        ></div>
-        <div
-          className="absolute w-4 h-4 rounded-full md:hidden" // hacky but cmon
-          style={{
-            left: "50%",
-            transform: "translateX(-50%)",
-            top: dotPosition,
-            zIndex: 69,
-            backgroundColor: isNearLabel ? "transparent" : "hsl(var(--primary))",
-            border: "2px solid hsl(var(--primary))",
-            transition: "background-color 0.15s, box-shadow 0.15s",
           }}
         ></div>
 
@@ -57,10 +44,10 @@ export function Timeline({ timelineItems, uniqueTimes, cardRefs }) {
               className="absolute transition-all"
               style={{ top: pos, left: "50%", transform: "translateX(-50%)" }}
             >
-              <div className="w-2 h-2 rounded-full bg-foreground hidden md:block"></div>
+              <div className="w-2 h-2 rounded-full bg-foreground"></div>
               <span
                 className={
-                  `absolute text-xs whitespace-nowrap hidden md:block ` +
+                  `absolute text-xs whitespace-nowrap ` +
                   (active
                     ? "text-foreground font-bold"
                     : "text-muted-foreground")
@@ -69,22 +56,6 @@ export function Timeline({ timelineItems, uniqueTimes, cardRefs }) {
                   left: "calc(100% + 10px)",
                   top: "50%",
                   transform: "translateY(-50%)",
-                }}
-              >
-                {t}
-              </span>
-              <span
-                className={
-                  `text-xs whitespace-nowrap md:hidden bg-background px-1 ` +
-                  (active
-                    ? "text-foreground font-bold"
-                    : "text-muted-foreground")
-                }
-                style={{
-                  position: "absolute",
-                  left: "50%",
-                  top: "50%",
-                  transform: "translate(-50%, -50%)",
                 }}
               >
                 {t}

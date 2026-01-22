@@ -33,10 +33,8 @@ export function useTimeline(timelineItems, cardRefs) {
 
   const [dotPosition, setDotPosition] = React.useState(0);
   const [activeIndex, setActiveIndex] = React.useState(null);
-  const [isNearLabel, setIsNearLabel] = React.useState(false);
 
   const targetDotPosition = React.useRef(0);
-  const prevNearLabel = React.useRef(false);
 
   function findActiveCardByPosition(dotPos, offsetsArr) {
     for (let i = 0; i < offsetsArr.length; i++) {
@@ -137,28 +135,15 @@ export function useTimeline(timelineItems, cardRefs) {
 
   React.useEffect(() => {
     let animationFrameId;
-    let currentPos = 0;
 
     const animate = () => {
-      const diff = targetDotPosition.current - currentPos;
-      if (Math.abs(diff) >= 0.5) {
-        currentPos = currentPos + diff * 0.1;
-      } else {
-        currentPos = targetDotPosition.current;
-      }
-      setDotPosition(currentPos);
-
-      // check if dot near a label
-      const positions = positionsRef.current;
-      const labelPositions = Object.values(positions);
-      const nearLabel = labelPositions.some(
-        (labelPos) => labelPos != null && Math.abs(currentPos - labelPos) < 17 // px threshold
-      );
-      if (nearLabel !== prevNearLabel.current) {
-        prevNearLabel.current = nearLabel;
-        setIsNearLabel(nearLabel);
-      }
-
+      setDotPosition((currentPos) => {
+        const diff = targetDotPosition.current - currentPos;
+        if (Math.abs(diff) < 0.5) {
+          return targetDotPosition.current;
+        }
+        return currentPos + diff * 0.1;
+      });
       animationFrameId = requestAnimationFrame(animate);
     };
 
@@ -181,7 +166,6 @@ export function useTimeline(timelineItems, cardRefs) {
     dotPosition,
     activeIndex,
     isTimeWithinActiveCard,
-    isNearLabel,
     get lineHeight() {
       return lineHeightRef.current;
     },
