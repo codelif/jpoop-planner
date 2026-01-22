@@ -308,7 +308,11 @@ export default function Page() {
                         {timelineItems.map((item, index) => {
                           const timeActive = isCardTimeActive(item);
                           return (
-                            <div key={index} ref={cardRefs.current[index]}>
+                            <div
+                              key={index}
+                              ref={cardRefs.current[index]}
+                              className={index === 0 ? "mt-4" : ""}
+                            >
                               <ScheduleCard
                                 item={item}
                                 timeActive={timeActive}
