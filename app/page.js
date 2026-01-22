@@ -296,7 +296,7 @@ export default function Page() {
                         <BreaksSection breaks={breaks} />
                       </div>
                     )}
-                    <div className="relative flex gap-5 md:gap-16">
+                    <div className="relative flex gap-4 md:gap-16">
                       {showTimeline && (
                         <Timeline
                           timelineItems={timelineItems}
@@ -304,7 +304,7 @@ export default function Page() {
                           cardRefs={cardRefs.current}
                         />
                       )}
-                      <div className="flex-1 space-y-10 text-foreground transition-all">
+                      <div className="flex-1 space-y-16 md:space-y-10 text-foreground transition-all">
                         {timelineItems.map((item, index) => {
                           const timeActive = isCardTimeActive(item);
                           return (

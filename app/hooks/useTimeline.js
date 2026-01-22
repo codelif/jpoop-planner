@@ -52,13 +52,17 @@ export function useTimeline(timelineItems, cardRefs) {
     const timeMap = {};
     const offsets = [];
 
+    // On mobile (< 768px), add padding to spread labels apart for card to fit
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+    const mobilePadding = isMobile ? 20 : 0;
+
     timelineItems.forEach((item, index) => {
       const cardEl = cardRefs[index]?.current;
       if (!cardEl) return;
 
       const cardRect = cardEl.getBoundingClientRect();
-      const topOffset = cardRect.top - lineRect.top;
-      const bottomOffset = cardRect.bottom - lineRect.top;
+      const topOffset = cardRect.top - lineRect.top - mobilePadding;
+      const bottomOffset = cardRect.bottom - lineRect.top + mobilePadding;
 
       offsets[index] = { top: topOffset, bottom: bottomOffset };
 
