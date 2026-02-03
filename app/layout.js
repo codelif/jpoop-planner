@@ -15,7 +15,7 @@ const sans = Montserrat({
 });
 
 const mono = Roboto_Mono({
-  variable: ["--font-roboto-mono"],
+  variable: "--font-roboto-mono",
   subsets: ["latin"],
 });
 

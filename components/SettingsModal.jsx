@@ -87,9 +87,11 @@ export function SettingsModal({
 
     const [, date, hh, mm, ss] = match;
     setAppVersion(`App Version: ${date} • ${hh}:${mm}:${ss}`);
-  }, []);
+  }, [open, appVersion, cacheVersion]);
 
   React.useEffect(() => {
+    console.log("Modal opened:", open);
+    if (!open) return;
     const raw = JSON.parse(localStorage.getItem("metadata"))["cacheVersion"];
     if (!raw) return;
 
@@ -103,7 +105,7 @@ export function SettingsModal({
 
     const [, date, hh, mm, ss] = match;
     setCacheVersion(`Time Table Version: ${date} • ${hh}:${mm}:${ss}`);
-  }, []);
+  }, [open, appVersion, cacheVersion]);
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
