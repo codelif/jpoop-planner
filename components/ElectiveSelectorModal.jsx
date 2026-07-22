@@ -7,8 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
-  CheckCircle2,
-  Circle,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ELECTIVE_NONE } from "@/app/lib/electives";
@@ -171,7 +170,10 @@ export function ElectiveSelectorModal({
         type="button"
         onClick={() => {
           if (!hasCategories) return;
-          setValue(safeActiveCategory, value);
+          setValue(
+            safeActiveCategory,
+            isActive && value !== ELECTIVE_NONE ? ELECTIVE_NONE : value,
+          );
         }}
         style={{ touchAction: "pan-y" }}
         className={[
@@ -183,16 +185,20 @@ export function ElectiveSelectorModal({
             : "border-border bg-background hover:bg-accent/40",
           "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
         ].join(" ")}
-        role="radio"
+        role="checkbox"
         aria-checked={isActive}
         disabled={!hasCategories}
       >
-        <div className="shrink-0">
-          {isActive ? (
-            <CheckCircle2 className="h-5 w-5 text-primary" />
-          ) : (
-            <Circle className="h-5 w-5 text-muted-foreground" />
-          )}
+        <div
+          className={[
+            "h-5 w-5 shrink-0 rounded border-2 inline-flex items-center justify-center transition-colors",
+            isActive
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-muted-foreground",
+          ].join(" ")}
+          aria-hidden="true"
+        >
+          {isActive ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}
         </div>
 
         <div className="min-w-0 flex-1">
@@ -445,12 +451,10 @@ export function ElectiveSelectorModal({
 
                         <div className="mt-1 h-5 flex items-center text-xs text-muted-foreground">
                           {query.trim()
-                            ? `Showing ${filteredOptions.length} match${
-                                filteredOptions.length === 1 ? "" : "es"
-                              }`
-                            : `Showing ${allOptionsForActive.length} option${
-                                allOptionsForActive.length === 1 ? "" : "s"
-                              }`}
+                            ? `Showing ${filteredOptions.length} match${filteredOptions.length === 1 ? "" : "es"
+                            }`
+                            : `Showing ${allOptionsForActive.length} option${allOptionsForActive.length === 1 ? "" : "s"
+                            }`}
                         </div>
                       </div>
 
@@ -461,7 +465,7 @@ export function ElectiveSelectorModal({
                           "px-4 md:px-5 py-4 space-y-2",
                           "overscroll-contain",
                         ].join(" ")}
-                        role="radiogroup"
+                        role="group"
                         aria-label={`Options for ${safeActiveCategory}`}
                         style={{
                           willChange: "transform",
