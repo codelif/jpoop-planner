@@ -2,7 +2,6 @@
 
 import React from "react";
 import {
-  ELECTIVE_NONE,
   buildDefaultElectiveSelection,
   normalizeElectiveSelection,
   filterWeekByElectives,

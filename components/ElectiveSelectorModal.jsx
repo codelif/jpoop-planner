@@ -10,7 +10,6 @@ import {
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ELECTIVE_NONE } from "@/app/lib/electives";
 import { slideVariants, HorizontalSwipeMotion } from "@/app/lib/motion";
 import { AnimatePresence } from "framer-motion";
 
@@ -44,17 +43,11 @@ export function ElectiveSelectorModal({
 
   const safeActiveCategory = hasCategories ? categories[safeActiveIndex] : "";
 
-  const selectedCount = React.useMemo(() => {
-    if (!hasCategories) return 0;
-    return categories.reduce((acc, cat) => {
-      const v = selected?.[cat];
-      return acc + (v && v !== ELECTIVE_NONE ? 1 : 0);
-    }, 0);
-  }, [hasCategories, categories, selected]);
-
-  const currentValue = hasCategories
-    ? (selected?.[safeActiveCategory] ?? ELECTIVE_NONE)
-    : ELECTIVE_NONE;
+  const currentValues = hasCategories
+    ? Array.isArray(selected?.[safeActiveCategory])
+      ? selected[safeActiveCategory]
+      : []
+    : [];
 
   const allOptionsForActive = React.useMemo(() => {
     if (!hasCategories) return [];
@@ -103,12 +96,10 @@ export function ElectiveSelectorModal({
   }, [open, activeCategory]);
 
   const normalizeLabel = (code) => {
-    if (code === ELECTIVE_NONE) return "None";
     return electiveNamesByCode?.[code] ? electiveNamesByCode[code] : code;
   };
 
   const normalizeSecondary = (code) => {
-    if (code === ELECTIVE_NONE) return "Hide electives from this category";
     const name = electiveNamesByCode?.[code];
     return name ? code : "";
   };
@@ -157,11 +148,11 @@ export function ElectiveSelectorModal({
 
   const hideAll = () => {
     if (!hasCategories) return;
-    for (const cat of categories) setValue(cat, ELECTIVE_NONE);
+    for (const cat of categories) setValue(cat, []);
   };
 
   const OptionRow = ({ value }) => {
-    const isActive = currentValue === value;
+    const isActive = currentValues.includes(value);
     const primary = normalizeLabel(value);
     const secondary = normalizeSecondary(value);
 
@@ -172,7 +163,9 @@ export function ElectiveSelectorModal({
           if (!hasCategories) return;
           setValue(
             safeActiveCategory,
-            isActive && value !== ELECTIVE_NONE ? ELECTIVE_NONE : value,
+            isActive
+              ? currentValues.filter((selectedValue) => selectedValue !== value)
+              : [...currentValues, value],
           );
         }}
         style={{ touchAction: "pan-y" }}
@@ -216,15 +209,10 @@ export function ElectiveSelectorModal({
   };
 
   const DesktopCategoryItem = ({ cat, idx }) => {
-    const val = selected?.[cat] ?? ELECTIVE_NONE;
+    const values = Array.isArray(selected?.[cat]) ? selected[cat] : [];
     const isHere = cat === safeActiveCategory;
 
-    const label =
-      val === ELECTIVE_NONE
-        ? "None"
-        : electiveNamesByCode?.[val]
-          ? `${electiveNamesByCode[val]} (${val})`
-          : val;
+    const label = values.length === 0 ? "None" : `${values.length} selected`;
 
     return (
       <button
@@ -372,11 +360,11 @@ export function ElectiveSelectorModal({
                 <div className="shrink-0 text-sm text-muted-foreground text-right">
                   <span>Selected: </span>
                   <span className="font-medium text-foreground">
-                    {currentValue === ELECTIVE_NONE
+                    {currentValues.length === 0
                       ? "None"
-                      : electiveNamesByCode?.[currentValue]
-                        ? `${electiveNamesByCode[currentValue]} (${currentValue})`
-                        : currentValue}
+                      : `${currentValues.length} elective${
+                          currentValues.length === 1 ? "" : "s"
+                        }`}
                   </span>
                 </div>
               </div>
@@ -475,8 +463,6 @@ export function ElectiveSelectorModal({
                           touchAction: "pan-y",
                         }}
                       >
-                        <OptionRow value={ELECTIVE_NONE} />
-
                         {filteredOptions.length === 0 ? (
                           <div className="mt-2 rounded-xl border border-border bg-background/40 p-4 text-sm text-muted-foreground">
                             No results. Try a different search.

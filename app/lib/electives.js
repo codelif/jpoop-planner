@@ -15,7 +15,7 @@ export function electivesSelStorageKey(course, semester, phase) {
 export function buildDefaultElectiveSelection(electivesByCategory = {}) {
   const selection = {};
   for (const cat of Object.keys(electivesByCategory || {})) {
-    selection[cat] = ELECTIVE_NONE;
+    selection[cat] = [];
   }
   return selection;
 }
@@ -30,24 +30,27 @@ export function normalizeElectiveSelection(
     const options = Array.isArray(electivesByCategory[cat])
       ? electivesByCategory[cat]
       : [];
-    const val = selection?.[cat];
+    const saved = selection?.[cat];
+    // Migrate the previous single-value format while loading persisted choices.
+    const values = Array.isArray(saved)
+      ? saved
+      : typeof saved === "string" && saved !== ELECTIVE_NONE
+        ? [saved]
+        : [];
 
-    if (val === ELECTIVE_NONE) {
-      normalized[cat] = ELECTIVE_NONE;
-      continue;
-    }
-
-    if (typeof val === "string" && options.includes(val)) {
-      normalized[cat] = val;
-    } else {
-      normalized[cat] = ELECTIVE_NONE;
-    }
+    normalized[cat] = [...new Set(values)].filter(
+      (value) => typeof value === "string" && options.includes(value),
+    );
   }
   return normalized;
 }
 
 export function hasAnyElectiveSelected(selection = {}) {
-  return Object.values(selection).some((v) => v && v !== ELECTIVE_NONE);
+  return Object.values(selection).some((values) =>
+    Array.isArray(values)
+      ? values.length > 0
+      : values && values !== ELECTIVE_NONE,
+  );
 }
 
 export function filterClassItemByElectives(item, selectedByCategory = {}) {
@@ -58,17 +61,23 @@ export function filterClassItemByElectives(item, selectedByCategory = {}) {
 
   const category = item.category;
 
-  // If the item has a category, it must match that category's chosen code.
+  const isCodeSelected = (selected) =>
+    Array.isArray(selected) ? selected.includes(code) : selected === code;
+
+  // If the item has a category, it must be selected in that category.
   if (
     category &&
     Object.prototype.hasOwnProperty.call(selectedByCategory, category)
   ) {
-    return selectedByCategory[category] === code;
+    return isCodeSelected(selectedByCategory[category]);
   }
 
   // Fallback: if category is missing/unexpected, allow only if code is chosen somewhere.
   const chosenCodes = new Set(
-    Object.values(selectedByCategory).filter((v) => v && v !== ELECTIVE_NONE),
+    Object.values(selectedByCategory).flatMap((values) => {
+      if (Array.isArray(values)) return values;
+      return values && values !== ELECTIVE_NONE ? [values] : [];
+    }),
   );
   return chosenCodes.has(code);
 }
