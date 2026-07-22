@@ -18,7 +18,7 @@ export function Timeline({ timelineItems, uniqueTimes, cardRefs }) {
   } = useTimeline(timelineItems, cardRefs);
 
   return (
-    <div className="relative" style={{ minWidth: "40px" }}>
+    <div className="relative min-w-[16px] md:min-w-[40px]">
       <div
         ref={lineRef}
         className="relative w-[2px] bg-border mx-auto transition-all"
