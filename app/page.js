@@ -296,7 +296,7 @@ export default function Page() {
                         <BreaksSection breaks={breaks} />
                       </div>
                     )}
-                    <div className="relative flex gap-16">
+                    <div className="relative flex gap-3 md:gap-10 pl-14 lg:pl-1">
                       {showTimeline && (
                         <Timeline
                           timelineItems={timelineItems}
