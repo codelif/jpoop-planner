@@ -9,6 +9,10 @@ export function electivesDefStorageKey(course, semester, phase) {
 }
 
 export function electivesSelStorageKey(course, semester, phase) {
+  return `electivesSelV2_${electiveComboKey(course, semester, phase)}`;
+}
+
+export function legacyElectivesSelStorageKey(course, semester, phase) {
   return `electivesSel_${electiveComboKey(course, semester, phase)}`;
 }
 

@@ -7,6 +7,7 @@ import {
   filterWeekByElectives,
   electivesDefStorageKey,
   electivesSelStorageKey,
+  legacyElectivesSelStorageKey,
 } from "@/app/lib/electives";
 
 function timeToMinutes(timeStr) {
@@ -268,6 +269,30 @@ export function useSchedule() {
     const comboKey = `${course}_${semester}_${phase}`;
     const defKey = electivesDefStorageKey(course, semester, phase);
     const selKey = electivesSelStorageKey(course, semester, phase);
+    const legacySelKey = legacyElectivesSelStorageKey(
+      course,
+      semester,
+      phase,
+    );
+    let cancelled = false;
+
+    function readSelectionAtKey(key) {
+      const stored = localStorage.getItem(key);
+      if (!stored) return null;
+
+      try {
+        const parsed = JSON.parse(stored);
+        return parsed && typeof parsed === "object" ? parsed : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function readStoredSelection() {
+      return (
+        readSelectionAtKey(selKey) || readSelectionAtKey(legacySelKey) || null
+      );
+    }
 
     async function loadElectives() {
       // Load cached definition first (useful offline or for instant UI)
@@ -281,15 +306,8 @@ export function useSchedule() {
         }
       }
 
-      let cachedSel = null;
-      const selStr = localStorage.getItem(selKey);
-      if (selStr) {
-        try {
-          cachedSel = JSON.parse(selStr);
-        } catch {
-          cachedSel = null;
-        }
-      }
+      const currentStoredSel = readSelectionAtKey(selKey);
+      const cachedSel = currentStoredSel || readSelectionAtKey(legacySelKey);
 
       // Apply cachedDef immediately if present
       if (
@@ -309,6 +327,15 @@ export function useSchedule() {
           const hasStoredSelection = !!cachedSel?.selectedElectives;
           if (hasStoredSelection) {
             setSelectedElectives(normalized);
+            if (!currentStoredSel) {
+              localStorage.setItem(
+                selKey,
+                JSON.stringify({
+                  cacheVersion: cachedSel?.cacheVersion || "0",
+                  selectedElectives: normalized,
+                }),
+              );
+            }
           } else {
             const defaults = buildDefaultElectiveSelection(cats);
             setSelectedElectives(defaults);
@@ -333,6 +360,7 @@ export function useSchedule() {
           semester,
         )}&phase=${encodeURIComponent(phase)}`;
         const serverData = await fetchJsonNoCache(url);
+        if (cancelled) return;
 
         const { cacheVersion, ...cats } = serverData || {};
         const electivesCats = cats && typeof cats === "object" ? cats : {};
@@ -356,13 +384,14 @@ export function useSchedule() {
           return;
         }
 
-        // Determine selection: prefer cachedSel if valid; else defaults.
+        // Re-read after the request so choices made while it was in flight win.
+        const latestStoredSel = readStoredSelection();
         const normalizedFromCache = normalizeElectiveSelection(
-          cachedSel?.selectedElectives,
+          latestStoredSel?.selectedElectives,
           electivesCats,
         );
 
-        const hadStoredSelection = !!cachedSel?.selectedElectives;
+        const hadStoredSelection = !!latestStoredSel?.selectedElectives;
         const nextSelection = hadStoredSelection
           ? normalizedFromCache
           : buildDefaultElectiveSelection(electivesCats);
@@ -388,12 +417,16 @@ export function useSchedule() {
           setElectiveModalOpen(true);
         }
       } catch (err) {
+        if (cancelled) return;
         console.error("Error fetching electives", err);
         // If server fails, keep whatever cached state we already applied.
       }
     }
 
     loadElectives();
+    return () => {
+      cancelled = true;
+    };
   }, [metadata, course, semester, phase, offline]);
 
   function persistElectiveSelection(nextSelection) {
