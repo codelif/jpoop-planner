@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jiit-planner-v2026.07.25_19.35.33';
+const CACHE_NAME = 'jiit-planner-v2026.07.30_23.26.05';
 const urlsToCache = [
     '/',
     // Add other assets you want to cache
