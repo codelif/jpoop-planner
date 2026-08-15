@@ -6,15 +6,31 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getTypeBadge } from "./ScheduleCard";
 
-function parseHour(timeStr) {
+function parseMinutes(timeStr) {
   if (!timeStr) return null;
   const [time, meridiem] = timeStr.split(" ");
-  let [hours] = time.split(":").map(Number);
+  let [hours, minutes] = time.split(":").map(Number);
   if (meridiem?.toUpperCase() === "PM" && hours < 12) hours += 12;
   if (meridiem?.toUpperCase() === "AM" && hours === 12) hours = 0;
-  return hours;
+  return hours * 60 + minutes;
 }
-// ...removed minute/rowSpan logic for simplified view...
+
+function parseHour(timeStr) {
+  const minutes = parseMinutes(timeStr);
+  return minutes == null ? null : Math.floor(minutes / 60);
+}
+
+function getEndBoundary(timeStr) {
+  const minutes = parseMinutes(timeStr);
+  return minutes == null ? null : Math.ceil(minutes / 60);
+}
+
+function getSlotSpan(classItem) {
+  const start = parseMinutes(classItem.start);
+  const end = parseMinutes(classItem.end);
+  if (start == null || end == null || end <= start) return 1;
+  return Math.max(1, Math.ceil((end - start) / 60));
+}
 const DAYS = [
   "Sunday",
   "Monday",
@@ -24,6 +40,8 @@ const DAYS = [
   "Friday",
   "Saturday",
 ];
+const ROW_HEIGHT_PX = 72;
+const CELL_VERTICAL_PADDING_PX = 16;
 
 export function ScheduleTableView({ allDaysClasses }) {
   const [open, setOpen] = React.useState(false);
@@ -36,7 +54,7 @@ export function ScheduleTableView({ allDaysClasses }) {
     dayClassMap[day] = classes;
     classes.forEach((cls) => {
       const s = parseHour(cls.start);
-      const e = parseHour(cls.end);
+      const e = getEndBoundary(cls.end);
       if (s != null && s < earliest) earliest = s;
       if (e != null && e > latest) latest = e;
     });
@@ -56,17 +74,47 @@ export function ScheduleTableView({ allDaysClasses }) {
   function renderCell(day, hour) {
     const list = dayClassMap[day] || [];
     const matches = list.filter((c) => parseHour(c.start) === hour);
-    if (!matches.length) return null;
-    return matches.map((cls, i) => (
-      <div
-        key={i}
-        onClick={() => openModal(cls)}
-        className="inline-block cursor-pointer mb-1 last:mb-0 bg-card border border-border rounded px-2 py-1 text-[10px] font-semibold hover:bg-muted transition-colors break-words max-w-[150px] leading-tight text-card-foreground"
-        style={{ letterSpacing: "-0.25px" }}
-      >
-        {cls.subject}
-      </div>
-    ));
+    const coveredByEarlierClass = list.some((cls) => {
+      const startHour = parseHour(cls.start);
+      return (
+        startHour != null &&
+        startHour < hour &&
+        hour < startHour + getSlotSpan(cls)
+      );
+    });
+
+    if (coveredByEarlierClass) return null;
+
+    const rowSpan = matches.length
+      ? Math.max(...matches.map(getSlotSpan))
+      : undefined;
+
+    return (
+      <td key={day} rowSpan={rowSpan} className="p-2 align-top">
+        {matches.length > 0 && (
+          <div
+            className="flex flex-col gap-1"
+            style={{
+              height: `${rowSpan * ROW_HEIGHT_PX - CELL_VERTICAL_PADDING_PX}px`,
+            }}
+          >
+            {matches.map((cls, i) => (
+              <div
+                key={i}
+                onClick={() => openModal(cls)}
+                className="block min-h-0 flex-1 cursor-pointer bg-card border border-border rounded px-2 py-1 text-[10px] font-semibold hover:bg-muted transition-colors break-words max-w-[150px] leading-tight text-card-foreground"
+                style={{
+                  flexGrow: getSlotSpan(cls),
+                  letterSpacing: "-0.25px",
+                }}
+              >
+                {cls.subject}
+              </div>
+            ))}
+          </div>
+        )}
+      </td>
+    );
   }
 
   return (
@@ -96,15 +144,12 @@ export function ScheduleTableView({ allDaysClasses }) {
             <tr
               key={hour}
               className="border-b border-muted hover:bg-muted/10 align-top"
+              style={{ height: `${ROW_HEIGHT_PX}px` }}
             >
               <td className="p-2 font-medium text-muted-foreground align-top">
                 {hour}:00
               </td>
-              {DAYS.map((day) => (
-                <td key={day} className="p-2 align-top">
-                  {renderCell(day, hour)}
-                </td>
-              ))}
+              {DAYS.map((day) => renderCell(day, hour))}
             </tr>
           ))}
         </tbody>
