@@ -53,7 +53,7 @@ export function Timeline({ timelineItems, uniqueTimes, cardRefs }) {
                     : "text-muted-foreground")
                 }
                 style={{
-                  left: "calc(100% + 10px)",
+                  right: "calc(100% + 10px)",
                   top: "50%",
                   transform: "translateY(-50%)",
                 }}
